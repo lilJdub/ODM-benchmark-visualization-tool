@@ -25,6 +25,7 @@ class logHelperApp:
         self.root.resizable(False, False)
         #
         self.viswindow=None
+        self.fileWin=None
         self.typeWin=None
         #
         self.merged_df=pd.DataFrame()
@@ -61,14 +62,51 @@ class logHelperApp:
         self.prodSKU = tk.Entry(self.viswindow)
         self.prodSKU.pack(side="top",anchor="center",pady=10)
 
-        submitbutton = tk.Button(self.viswindow,text="Select Files",command=self.run_vis_window)
+        submitbutton = tk.Button(self.viswindow,text="Select Files",command=self.categorize_files)
         submitbutton.pack(side="top",anchor="center",pady=40)
 
     #將log檔案自行分類
     def categorize_files(self):
         f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
-        for files in f:
-            print("OK")
+        #視窗
+        self.fileWin=tk.Toplevel(self.viswindow)
+        self.fileWin.title("檔案類型選擇")
+
+        #破幹分類
+        for file in f:
+            #每個path生成一個label/checkboxes
+            label = tk.Label(self.fileWin, text=f"選擇 {file} 的格式:")
+            label.pack()
+            self.checkbox_frame = tk.Frame(self.fileWin)
+            
+            fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
+            for name in fileTools:
+                checkbox=tk.Checkbutton(self.checkbox_frame, text=name)
+                checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.checkbox_frame.pack()  # 將包含Checkbuttons的Frame pack 到主Frame中
+                
+            #讀取df
+            #df_name=""
+            #df=pd.read_csv(file,skipfooter=2,engine="python")
+
+            '''
+            #match term
+            if df.columns[1]=="fir":
+                df_name="AIDA64"
+            elif df.columns[2]=="sec":
+                df_name="Furmark"
+            elif df.columns[3]=="thr":
+                df_name="3DMark"
+            elif df.columns[4]=="fou":
+                df_name="HWInfo64"
+            else: df_name="N/A"
+            '''
+            
+        
+            
+
+
+
 
     #選擇visualizatiion的格式
     def run_vis_window(self):
