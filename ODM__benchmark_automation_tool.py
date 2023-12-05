@@ -5,31 +5,35 @@ import numpy as np
 import matplotlib.pyplot as plt
 import openpyxl
 from tkinter import ttk
-from tkinter import messagebox as mb
 from tkinter import filedialog
+from tkinter import messagebox
 from openpyxl.drawing.image import Image
+
+#處理多線程
+import threading
 
 #testing
 import ttkbootstrap
 
 class logHelperApp:
-    #initialize視窗
+    #initialize root window
     def __init__(self,root):
         style=ttkbootstrap.Style(theme="pulse")
         TOP6=style.master
 
-        #基本元件放置和定義
+        #Placing and initiation of the objects and windows.
         self.root = root
         self.root.title("LogHelper Widget")
         self.root.geometry("400x600")
         self.root.resizable(False, False)
-        #
+        
+        #Windows
         self.viswindow=None
         self.fileWin=None
         self.typeWin=None
+        
         #
         self.merged_df=pd.DataFrame()
-        self.coloredrows=[]
         self.totalname=""
         submitButton = tk.Button(self.root,text="Select Files",command=self.create_vis_window)
         submitButton.config(padx=80,pady=40,anchor="center")
@@ -39,7 +43,7 @@ class logHelperApp:
         finalizeButton.config(padx=80,pady=40,anchor="center")
         finalizeButton.pack(side="bottom",pady=40)
 
-    #視覺化入口
+    #Visualization Windows.
     def create_vis_window(self):
         self.viswindow=tk.Toplevel(root)
 
@@ -65,17 +69,36 @@ class logHelperApp:
         submitbutton = tk.Button(self.viswindow,text="Select Files",command=self.categorize_files)
         submitbutton.pack(side="top",anchor="center",pady=40)
 
-    #將log檔案自行分類
+    #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
         f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
+        
+        #check if f is emnpty
+        if len(f)<1:
+            messagebox.showerror("Error", "No files selected. Please choose at least one CSV file.")
+            return
+    
         #視窗
         self.fileWin=tk.Toplevel(self.viswindow)
-        self.fileWin.title("檔案類型選擇")
+        self.fileWin.title("File Type")
+        self.fileWin.withdraw()
 
-        #破幹分類
-        for file in f:
-            #每個path生成一個label/checkboxes
-            label = tk.Label(self.fileWin, text=f"選擇 {file} 的格式:")
+        self.loadwin=tk.Toplevel(self.fileWin)
+        self.loadwin.geometry("300x100")
+        self.loadwin.title("Loading")
+        load_label=tk.Label(self.loadwin,text="Loading file data, please wait.....")
+        load_label.pack()
+        
+        #update UI
+        self.fileWin.update()
+        
+        #each file type
+        for path in f:    
+            #load and save df
+            df=pd.read_csv(path,skipfooter=2,engine="python")
+
+            #Generate checkboxes and labels to each file
+            label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
             label.pack()
             self.checkbox_frame = tk.Frame(self.fileWin)
             
@@ -83,30 +106,26 @@ class logHelperApp:
             for name in fileTools:
                 checkbox=tk.Checkbutton(self.checkbox_frame, text=name)
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
-            self.checkbox_frame.pack()  # 將包含Checkbuttons的Frame pack 到主Frame中
+                #Check boxes
+                if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
+                    checkbox.select()
+                    
+            # Pack Checkbuttons Frame to the main frames
+            self.checkbox_frame.pack()
+
                 
-            #讀取df
-            #df_name=""
-            #df=pd.read_csv(file,skipfooter=2,engine="python")
+                
 
-            '''
-            #match term
-            if df.columns[1]=="fir":
-                df_name="AIDA64"
-            elif df.columns[2]=="sec":
-                df_name="Furmark"
-            elif df.columns[3]=="thr":
-                df_name="3DMark"
-            elif df.columns[4]=="fou":
-                df_name="HWInfo64"
-            else: df_name="N/A"
-            '''
-            
         
-            
+        #Submit button for the next step
+        submit_category=tk.Button(self.fileWin, text="Submit file")
+        submit_category.pack()
 
+        self.fileWin.deiconify()
+        self.loadwin.destroy()
 
-
+    def run_cat_files(self):
+        print("await further updates")
 
     #選擇visualizatiion的格式
     def run_vis_window(self):
