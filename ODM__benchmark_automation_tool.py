@@ -71,8 +71,11 @@ class logHelperApp:
 
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
-        f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
+        df_pile=[]
+        self.chkbox_dict={}
         
+        #Choose files for using
+        f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
         #check if f is emnpty
         if len(f)<1:
             messagebox.showerror("Error", "No files selected. Please choose at least one CSV file.")
@@ -96,6 +99,11 @@ class logHelperApp:
         for path in f:    
             #load and save df
             df=pd.read_csv(path,skipfooter=2,engine="python")
+            df_pile.append(df)
+
+            #get filename only
+            file_name = str(os.path.basename(path)).removesuffix(".csv")
+
 
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
@@ -104,28 +112,37 @@ class logHelperApp:
             
             fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
             for name in fileTools:
+                var=tk.BooleanVar
                 checkbox=tk.Checkbutton(self.checkbox_frame, text=name)
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
-                #Check boxes
+                print(path,name)
+                
+                #Check boxes based on df
                 if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
                     checkbox.select()
-                    
+                if df.columns[3]=="AIDA64AIDA64" and name =="AIDA64":
+                    checkbox.select()
+                if df.columns[4]=="HWINFO64HWINFO64" and name =="HWInfo64":
+                    checkbox.select()
+                if df.columns[5]=="FurmarkFurmark" and name =="Furmark":
+                    checkbox.select()
+
             # Pack Checkbuttons Frame to the main frames
             self.checkbox_frame.pack()
 
-                
-                
+        def run_cat_files():
+            #finds out checkbox
+            print(self.chkbox_dict)
 
-        
+
         #Submit button for the next step
-        submit_category=tk.Button(self.fileWin, text="Submit file")
+        submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files)
         submit_category.pack()
 
         self.fileWin.deiconify()
         self.loadwin.destroy()
 
-    def run_cat_files(self):
-        print("await further updates")
+    
 
     #選擇visualizatiion的格式
     def run_vis_window(self):
@@ -267,7 +284,7 @@ class logHelperApp:
         #將各表統合
         print(viz_sku_df)
 
-
+    
 
 '''
 #疊圖部分:將各個總表抓起來疊圖
