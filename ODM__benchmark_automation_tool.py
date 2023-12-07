@@ -8,6 +8,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 from openpyxl.drawing.image import Image
+from collections import defaultdict
 
 #處理多線程
 import threading
@@ -72,8 +73,9 @@ class logHelperApp:
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
         df_pile=[]
+        chkbox_pile=[]
         self.chkbox_dict={}
-        
+
         #Choose files for using
         f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
         #check if f is emnpty
@@ -101,9 +103,7 @@ class logHelperApp:
             df=pd.read_csv(path,skipfooter=2,engine="python")
             df_pile.append(df)
 
-            #get filename only
-            file_name = str(os.path.basename(path)).removesuffix(".csv")
-
+            
 
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
@@ -112,10 +112,11 @@ class logHelperApp:
             
             fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
             for name in fileTools:
-                var=tk.BooleanVar
-                checkbox=tk.Checkbutton(self.checkbox_frame, text=name)
+                var=tk.IntVar()
+                checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var)
+                checkbox.var=var
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
-                print(path,name)
+                chkbox_pile.append(checkbox)
                 
                 #Check boxes based on df
                 if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
@@ -131,8 +132,15 @@ class logHelperApp:
             self.checkbox_frame.pack()
 
         def run_cat_files():
-            #finds out checkbox
-            print(self.chkbox_dict)
+            for path in f:
+                file_name = str(os.path.basename(path)).removesuffix(".csv")
+                d=defaultdict(dict)
+                for cb in chkbox_pile:
+                    chkboxtext=cb.cget("text")
+                    d[file_name][chkboxtext]=cb.var.get()
+                    
+            print(d)
+
 
 
         #Submit button for the next step
