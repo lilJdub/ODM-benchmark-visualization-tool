@@ -73,8 +73,9 @@ class logHelperApp:
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
         df_pile=[]
-        chkbox_pile=[]
         self.chkbox_dict={}
+        checkbox_file_association = []
+
 
         #Choose files for using
         f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
@@ -103,20 +104,20 @@ class logHelperApp:
             df=pd.read_csv(path,skipfooter=2,engine="python")
             df_pile.append(df)
 
-            
-
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
             label.pack()
             self.checkbox_frame = tk.Frame(self.fileWin)
             
             fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
+            file_checkboxes = []
             for name in fileTools:
                 var=tk.IntVar()
                 checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var)
                 checkbox.var=var
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
-                chkbox_pile.append(checkbox)
+                file_checkboxes.append(checkbox)
+
                 
                 #Check boxes based on df
                 if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
@@ -128,20 +129,22 @@ class logHelperApp:
                 if df.columns[5]=="FurmarkFurmark" and name =="Furmark":
                     checkbox.select()
 
+            # Store the association between checkboxes and the current file
+            checkbox_file_association.append((path, file_checkboxes))
+
             # Pack Checkbuttons Frame to the main frames
             self.checkbox_frame.pack()
 
         def run_cat_files():
-            for path in f:
-                file_name = str(os.path.basename(path)).removesuffix(".csv")
-                d=defaultdict(dict)
-                for cb in chkbox_pile:
+            d=defaultdict(dict)
+            for file_path, file_checkboxes in checkbox_file_association:
+                file_name = str(os.path.basename(file_path)).removesuffix(".csv")
+                for cb in file_checkboxes:
                     chkboxtext=cb.cget("text")
                     d[file_name][chkboxtext]=cb.var.get()
-                    
-            print(d)
-
-
+            self.visualize_and_merge_files(df_pile,d)
+            #DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
+            
 
         #Submit button for the next step
         submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files)
@@ -150,8 +153,17 @@ class logHelperApp:
         self.fileWin.deiconify()
         self.loadwin.destroy()
 
-    
+    def visualize_and_merge_files(self,df_pile,d):
+        #main hub for visualization and merging
+        print(d)
+        print(df_pile)
+        for key,val in d.items():
+            for key2,val2 in val.items():
+                print(key, key2,val2)
 
+            
+    
+#這以下是舊code
     #選擇visualizatiion的格式
     def run_vis_window(self):
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
