@@ -73,7 +73,7 @@ class logHelperApp:
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
         df_pile=[]
-        self.chkbox_dict={}
+        self.dfPile={}
         checkbox_file_association = []
 
 
@@ -102,7 +102,10 @@ class logHelperApp:
         for path in f:    
             #load and save df
             df=pd.read_csv(path,skipfooter=2,engine="python")
-            df_pile.append(df)
+            fn = str(os.path.basename(path)).removesuffix(".csv")
+            #save dict into dictionary
+            self.dfPile[fn]=df
+
 
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
@@ -142,7 +145,7 @@ class logHelperApp:
                 for cb in file_checkboxes:
                     chkboxtext=cb.cget("text")
                     d[file_name][chkboxtext]=cb.var.get()
-            self.visualize_and_merge_files(df_pile,d)
+            self.visualize_and_merge_files(self.dfPile,d)
             #DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
             
 
@@ -153,15 +156,49 @@ class logHelperApp:
         self.fileWin.deiconify()
         self.loadwin.destroy()
 
-    def visualize_and_merge_files(self,df_pile,d):
+    def visualize_and_merge_files(self,dfPile,d):
         #main hub for visualization and merging
-        print(d)
-        print(df_pile)
         for key,val in d.items():
-            for key2,val2 in val.items():
-                print(key, key2,val2)
+            print(key) #key=表名
+            #print(val) # 打勾的dictionary
+            #print(dfPile[key]) #individual df
+            columns=[]
 
             
+            #switch based on val
+            for k,v in val.items():
+                if v==1:
+                    match k:
+                        case "AIDA64":
+                            columns.append("a")
+                        case "Furmark":
+                            columns.append("f")
+                        case "3DMark":
+                            columns.append("3")
+                        case "HWInfo64":
+                            columns.append("h")
+                        case "Prime95":
+                            columns.append("p")
+
+            self.visualize_merge_docs(key,columns,dfPile[key])
+
+    def visualize_merge_docs(self,file_name,columns,df):
+        #Arrays for chart filtering
+        charts=[]
+        #Visualize docs using the columns mentioned
+        print(columns)
+        for col in columns:
+            data=df[col]
+            dataname=str(file_name)+"_"+str(col)
+            plt.figure(figsize=(10, 6))  # 設置圖表大小
+            plt.plot(data)
+            plt.title(dataname)
+            plt.xlabel('Index')
+            plt.ylabel(col)
+            chartname=dataname+".png"
+            charts.append(chartname)
+            plt.savefig(chartname)
+        plt.close()
     
 #這以下是舊code
     #選擇visualizatiion的格式
