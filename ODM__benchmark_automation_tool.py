@@ -158,47 +158,59 @@ class logHelperApp:
 
     def visualize_and_merge_files(self,dfPile,d):
         #main hub for visualization and merging
+        #all the file names
+        charts=[]
+
         for key,val in d.items():
-            print(key) #key=表名
+            #print(key) #key=表名
             #print(val) # 打勾的dictionary
             #print(dfPile[key]) #individual df
-            columns=[]
-
+            column_sets=set()
             
             #switch based on val
             for k,v in val.items():
                 if v==1:
                     match k:
                         case "AIDA64":
-                            columns.append("a")
+                            column_sets.add("a")
+                            column_sets.add("1")
                         case "Furmark":
-                            columns.append("f")
+                            column_sets.add("f")
+                            column_sets.add("1")
                         case "3DMark":
-                            columns.append("3")
+                            column_sets.add("3dm")
+                            column_sets.add("3dm2")
                         case "HWInfo64":
-                            columns.append("h")
+                            column_sets.add("h")
+                            column_sets.add("1")
                         case "Prime95":
-                            columns.append("p")
+                            column_sets.add("p95")
+                            column_sets.add("p952")
+            
+            self.visualize_merge_docs(key,column_sets,dfPile[key],charts)
+        
 
-            self.visualize_merge_docs(key,columns,dfPile[key])
-
-    def visualize_merge_docs(self,file_name,columns,df):
-        #Arrays for chart filtering
-        charts=[]
+    def visualize_merge_docs(self,file_name,column_sets,df,charts):
         #Visualize docs using the columns mentioned
-        print(columns)
-        for col in columns:
-            data=df[col]
-            dataname=str(file_name)+"_"+str(col)
-            plt.figure(figsize=(10, 6))  # 設置圖表大小
-            plt.plot(data)
-            plt.title(dataname)
-            plt.xlabel('Index')
-            plt.ylabel(col)
-            chartname=dataname+".png"
-            charts.append(chartname)
-            plt.savefig(chartname)
-        plt.close()
+        for col in column_sets:
+            print(col)
+            try:
+                data=df[col]
+                dataname=str(file_name)+"_"+str(col)
+                plt.figure(figsize=(10, 6))  # 設置圖表大小
+                plt.plot(data)
+                plt.title(dataname)
+                plt.xlabel('Index')
+                plt.ylabel(col)
+                chartname=dataname+".png"
+                #place all chart names in a array.
+                charts.append(chartname)
+                plt.savefig(chartname)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+            except Exception as e:
+                print(e)
+        plt.close()  
+
+        self.mergecharts(charts)
     
 #這以下是舊code
     #選擇visualizatiion的格式
@@ -303,7 +315,7 @@ class logHelperApp:
             self.merged_df=pd.concat([self.merged_df, df], axis=1)
         
 
-    def mergecharts(self,charts,file_name):
+    def mergecharts(self,charts):
         workbook = openpyxl.Workbook()
         #圖像化部分
         worksheet = workbook.active
