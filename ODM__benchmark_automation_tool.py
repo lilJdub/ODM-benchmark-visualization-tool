@@ -67,6 +67,7 @@ class logHelperApp:
             self.viswindow.destroy()
         
         self.viswindow.protocol("WM_DELETE_WINDOW", on_close)
+        self.viswindow.bind("<Destroy>", lambda e: on_close())
 
         self.viswindow.title("檔案類型選擇")
         self.viswindow.geometry("400x600")
@@ -191,6 +192,10 @@ class logHelperApp:
     def visualize_and_merge_files(self,dfPile,d):
         self.merged_df=pd.DataFrame()
         self.charts=[]
+
+        def on_close():
+            # Enable interactions with the root window when the viswindow is closed
+            self.root.attributes('-disabled', False)
 
         #all the file names
         for file_name,val in d.items():
