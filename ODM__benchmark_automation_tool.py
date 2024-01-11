@@ -37,7 +37,7 @@ class logHelperApp:
 
         #Button & Frame
         # 創建上半部的框架
-        top_frame = tk.Frame(self.root, bd=2, relief=tk.GROOVE)
+        top_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         top_frame.pack(side="top", fill="both", expand=True)
         submitlabel=tk.Label(top_frame,text="Select Files")
         submitlabel.pack(side="top", pady=20)
@@ -46,7 +46,7 @@ class logHelperApp:
         submitButton.pack(side="top",pady=40)
         
         # 創建下半部的框架
-        bottom_frame = tk.Frame(self.root, bd=2, relief=tk.GROOVE)
+        bottom_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         bottom_frame.pack(side="top", fill="both", expand=True)
         finalizelabel=tk.Label(bottom_frame,text="final results")
         finalizelabel.pack(side="top", pady=20)
@@ -61,6 +61,8 @@ class logHelperApp:
 
         self.viswindow=tk.Toplevel(root)
 
+        vis_frame= tk.Frame(self.viswindow, bd=5, relief=tk.GROOVE)
+
         def on_close():
             # Enable interactions with the root window when the viswindow is closed
             self.root.attributes('-disabled', False)
@@ -74,23 +76,23 @@ class logHelperApp:
         self.viswindow.resizable(False,False)
 
         projectLabel = tk.Label(self.viswindow,text="Enter Project Name")
-        projectLabel.pack(side="top",anchor="center",pady=10)
-        self.projectName = tk.Entry(self.viswindow)
-        self.projectName.pack(side="top",anchor="center",pady=10)    
+        projectLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.projectName = tk.Entry(self.viswindow, justify="center")
+        self.projectName.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)    
 
-        phaseLabel = tk.Label(self.viswindow,text="Enter Phase Name")
-        phaseLabel.pack(side="top",anchor="center",pady=10)
-        self.phase=ttk.Combobox(self.viswindow,values=["DB","SI","PV","MV"],state="readonly")
-        self.phase.pack(side="top",anchor="center",pady=10)
+        phaseLabel = tk.Label(self.viswindow,text="Choose Phase Name")
+        phaseLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.phase=ttk.Combobox(self.viswindow,values=["DB","SI","PV","MV"],state="readonly", justify="center")
+        self.phase.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)
 
         skuLabel = tk.Label(self.viswindow,text="Product SKU")
-        skuLabel.pack(side="top",anchor="center",pady=10)
-        self.prodSKU = tk.Entry(self.viswindow)
-        self.prodSKU.pack(side="top",anchor="center",pady=10)
+        skuLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.prodSKU = tk.Entry(self.viswindow, justify="center")
+        self.prodSKU.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)
 
         submitbutton = tk.Button(self.viswindow,text="Select Files",command=self.categorize_files)
         submitbutton.config(padx=20, pady=20)
-        submitbutton.pack(side="top",anchor="center",pady=40)
+        submitbutton.pack(side="top",anchor="center",pady=20 , padx=5,fill="both", expand=True)
 
         # Set grab_set to make the viswindow modal
         self.viswindow.grab_set()
@@ -98,8 +100,17 @@ class logHelperApp:
 
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
+        
         #紀錄project name
-        self.totalname=str(self.projectName.get())+"_"+str(self.phase.get())+"_"+str(self.prodSKU.get())
+        project_name = self.projectName.get()
+        phase_name = self.phase.get()
+        prod_sku = self.prodSKU.get()
+        self.totalname=str(project_name)+"_"+str(phase_name)+"_"+str(prod_sku)
+        
+        #check if all needed columns is entered.
+        if not project_name or not prod_sku:
+            messagebox.showerror("Error", "Please enter Project Name and Product SKU.")
+            return
 
         #暫存
         self.dfPile={}
@@ -122,7 +133,7 @@ class logHelperApp:
         self.loadwin.geometry("300x100")
         self.loadwin.title("Loading")
         load_label=tk.Label(self.loadwin,text="Loading file data, please wait.....")
-        load_label.pack()
+        load_label.pack(side="top", fill="both", expand=True)
         
         #update UI
         self.fileWin.update()
@@ -134,7 +145,6 @@ class logHelperApp:
             fn = str(os.path.basename(path)).removesuffix(".csv")
             #save dict into dictionary
             self.dfPile[fn]=df
-
 
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
@@ -150,7 +160,6 @@ class logHelperApp:
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
                 file_checkboxes.append(checkbox)
 
-                
                 #Check boxes based on df
                 if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
                     checkbox.select()
@@ -171,6 +180,7 @@ class logHelperApp:
 
         def run_cat_files():
             d=defaultdict(dict)
+            #checking each individual files for usage
             for file_path, file_checkboxes in checkbox_file_association:
                 file_name = str(os.path.basename(file_path)).removesuffix(".csv")
                 for cb in file_checkboxes:
@@ -182,8 +192,8 @@ class logHelperApp:
             
 
         #Submit button for the next step
-        submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files)
-        submit_category.pack()
+        submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files, padx=10,pady=10)
+        submit_category.pack(pady=10)
 
         self.fileWin.deiconify()
         self.loadwin.destroy()
@@ -192,10 +202,6 @@ class logHelperApp:
     def visualize_and_merge_files(self,dfPile,d):
         self.merged_df=pd.DataFrame()
         self.charts=[]
-
-        def on_close():
-            # Enable interactions with the root window when the viswindow is closed
-            self.root.attributes('-disabled', False)
 
         #all the file names
         for file_name,val in d.items():
@@ -238,8 +244,10 @@ class logHelperApp:
         """
         the actual finishing point
         """
-        self.viswindow.destroy()
+        tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
 
+        self.viswindow.destroy()
+ 
 
     def visualize_merge_docs(self,file_name,column_sets,df):
         #Visualize docs using the columns mentioned
