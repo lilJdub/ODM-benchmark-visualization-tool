@@ -124,16 +124,16 @@ class logHelperApp:
             messagebox.showerror("Error", "No files selected. Please choose at least one CSV file.")
             return
     
-        #視窗
+        #checkbox windows
         self.fileWin=tk.Toplevel(self.viswindow)
         self.fileWin.title("File Type")
         self.fileWin.withdraw()
 
-        self.loadwin=tk.Toplevel(self.fileWin)
-        self.loadwin.geometry("300x100")
-        self.loadwin.title("Loading")
-        load_label=tk.Label(self.loadwin,text="Loading file data, please wait.....")
-        load_label.pack(side="top", fill="both", expand=True)
+        self.checkwin=tk.Toplevel(self.fileWin)
+        self.checkwin.geometry("300x100")
+        self.checkwin.title("Loading")
+        check_label=tk.Label(self.checkwin,text="checking data type, please wait.....")
+        check_label.pack(side="top", fill="both", expand=True)
         
         #update UI
         self.fileWin.update()
@@ -179,6 +179,17 @@ class logHelperApp:
             self.checkbox_frame.pack()
 
         def run_cat_files():
+            #loading window
+            self.loadwin=tk.Toplevel(self.fileWin)
+            self.loadwin.geometry("300x100")
+            self.loadwin.title("Loading")
+            load_label=tk.Label(self.loadwin,text="Loading file data, please wait.....")
+            load_label.pack(side="top", fill="both", expand=True)
+
+            #update UI
+            self.fileWin.update()
+        
+            #get an dictionary
             d=defaultdict(dict)
             #checking each individual files for usage
             for file_path, file_checkboxes in checkbox_file_association:
@@ -189,14 +200,16 @@ class logHelperApp:
                     d[file_name][chkboxtext]=cb.var.get()
             self.visualize_and_merge_files(self.dfPile,d)
             #d: 3DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
-            
+            self.loadwin.destroy
 
         #Submit button for the next step
         submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files, padx=10,pady=10)
         submit_category.pack(pady=10)
 
         self.fileWin.deiconify()
-        self.loadwin.destroy()
+        self.checkwin.destroy()
+
+        self.fileWin.grab_set()
 
     #main hub for visualization and merging
     def visualize_and_merge_files(self,dfPile,d):
@@ -272,8 +285,10 @@ class logHelperApp:
                 plt.savefig(chartname)                               
             # if col inot in df[col]: print error message
             else:
-                print("the column: "+col +" is not in the data.")
-            
+                errmsg="the column: "+col +" is not in the data."
+                er=tk.Label(self.loadwin,text=errmsg)
+                er.pack(side="top", fill="both", expand=True)
+                self.loadwin.update()
             plt.close()
         
         # add df name to chart header : preparation for merging documentation 
