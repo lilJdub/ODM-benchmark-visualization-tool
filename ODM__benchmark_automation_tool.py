@@ -149,13 +149,13 @@ class logHelperApp:
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
             label.pack()
-            self.checkbox_frame = tk.Frame(self.fileWin)
+            self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)
             
             fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
             file_checkboxes = []
             for name in fileTools:
                 var=tk.IntVar()
-                checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var)
+                checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var,pady=5)
                 checkbox.var=var
                 checkbox.pack(side=tk.LEFT, anchor=tk.W)
                 file_checkboxes.append(checkbox)
@@ -336,25 +336,93 @@ class logHelperApp:
     """
     def finalizeprocess2(self):
         dict_path_df={}
-        viz_sku_df=[]
-
-        used_criteria=["CPU Package [W]","CPU Package Power [W]", "GPU Power [W]" ]
 
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
+        #no need for later if f==none
+        if f==None:
+            return
+        #the window for checkboxes
+        self.final_checkwin=tk.Toplevel(root)
+        fin_label_frame=tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
+        fin_label_frame.pack()
+        
+        fin_label1=tk.Label(fin_label_frame, text="Files chosen are: ")
+        fin_label1.pack()
+
+        #saving path into an array
         for path in f:
             dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
-        #篩剩下需要的列
+
+        #finding out path
         for path, df in dict_path_df.items():
-            col_intersection=list(set(used_criteria).intersection(df.columns.get_level_values(0)))
-            if col_intersection:
-                df_loc=df.loc[:, col_intersection]
-                viz_sku_df.append(df_loc)
-            else:
-                print("no cols in df")
-        #將各表統合
-        print(viz_sku_df)
-    
-                        
+            fin_check_label=tk.Label(fin_label_frame, text=path)
+            fin_check_label.pack(pady=(10,0))
+
+        #frame below for checkboxes
+        fin_check_frame= tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
+        fin_check_frame.pack(fill="x",expand=True)
+
+        #choosing and setting the criteria of each df
+        fin_label2=tk.Label(fin_check_frame, text="Choose the criteria.")
+        fin_label2.pack()
+
+        #AIDA64 checkboxes
+        aida_label = tk.Label(fin_check_frame, text="AIDA64")
+        aida_label.pack(pady=(5,0))
+        aidachkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
+        aidachkframe.pack()
+        chk=["a64","a642"]
+        for c in chk:
+            cb=tk.Checkbutton(aidachkframe, text=c,pady=5)
+            cb.pack(side=tk.LEFT, anchor=tk.W)
+
+        #Furmark checkboxes
+        furmark_label = tk.Label(fin_check_frame, text="Furmark")
+        furmark_label.pack(pady=(5,0))
+        fmchkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
+        fmchkframe.pack()
+        chk=["fm","fm2"]
+        for c in chk:
+            cb=tk.Checkbutton(fmchkframe, text=c,pady=5)
+            cb.pack(side=tk.LEFT, anchor=tk.W)
+
+        #3Dmark checkboxes
+        threedmark_label = tk.Label(fin_check_frame, text="3DMark")
+        threedmark_label.pack(pady=(5,0))
+        threechkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
+        threechkframe.pack()
+        chk=["3dm","3dm2"]
+        for c in chk:
+            cb=tk.Checkbutton(threechkframe, text=c,pady=5)
+            cb.pack(side=tk.LEFT, anchor=tk.W)
+        
+        
+        #hwinfo64 checkboxes
+        hwinfo64_label = tk.Label(fin_check_frame, text="HWinfo 64")
+        hwinfo64_label.pack(pady=(5,0))
+        hw64chkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
+        hw64chkframe.pack()
+        chk=["hw64","hw642"]
+        for c in chk:
+            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5)
+            cb.pack(side=tk.LEFT, anchor=tk.W)
+        
+        #prime95 checkboxes
+        prime95_label = tk.Label(fin_check_frame, text="Prime95")
+        prime95_label.pack(pady=(10,0))
+        p95frame=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
+        p95frame.pack()
+        chk=["a64","a642"]
+        for c in chk:
+            cb=tk.Checkbutton(p95frame, text=c,pady=5)
+            cb.pack(side=tk.LEFT, anchor=tk.W)
+
+        def img_stack_analysis():
+            print("bruhhhhh")
+
+        final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=img_stack_analysis, pady=10)
+        final_analyze_btn.pack(fill="x", pady=10)
+
 #主執行檔
 if __name__ == "__main__":
     root = tk.Tk()
