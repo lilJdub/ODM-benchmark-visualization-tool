@@ -366,14 +366,31 @@ class logHelperApp:
         fin_label2=tk.Label(fin_check_frame, text="Choose the criteria.")
         fin_label2.pack()
 
+        #Saving states of checkboxes
+        self.checkbox_states = {
+            'aida64': [tk.BooleanVar(), tk.BooleanVar()],
+            'furmark': [tk.BooleanVar(), tk.BooleanVar()],
+            '3dmark': [tk.BooleanVar(), tk.BooleanVar()],
+            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar()],
+            'prime95': [tk.BooleanVar(), tk.BooleanVar()]
+        }
+
+        self.testerstates={
+            'aida64': ["a64","a642"],
+            'furmark': ["fm","fm2"],
+            '3dmark': ["3dm","3dm2"],
+            'hwinfo64': ["hw64","hw642"],
+            'prime95': ["p95","p952"]
+        }
+
         #AIDA64 checkboxes
         aida_label = tk.Label(fin_check_frame, text="AIDA64")
         aida_label.pack(pady=(5,0))
         aidachkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         aidachkframe.pack()
-        chk=["a64","a642"]
-        for c in chk:
-            cb=tk.Checkbutton(aidachkframe, text=c,pady=5)
+        chk=self.testerstates["aida64"]
+        for index, c in enumerate(chk):            
+            cb=tk.Checkbutton(aidachkframe, text=c,pady=5,variable=self.checkbox_states['aida64'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
         #Furmark checkboxes
@@ -381,9 +398,9 @@ class logHelperApp:
         furmark_label.pack(pady=(5,0))
         fmchkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         fmchkframe.pack()
-        chk=["fm","fm2"]
-        for c in chk:
-            cb=tk.Checkbutton(fmchkframe, text=c,pady=5)
+        chk=self.testerstates["furmark"]
+        for index, c in enumerate(chk):            
+            cb=tk.Checkbutton(fmchkframe, text=c,pady=5,variable=self.checkbox_states['furmark'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
         #3Dmark checkboxes
@@ -391,9 +408,9 @@ class logHelperApp:
         threedmark_label.pack(pady=(5,0))
         threechkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         threechkframe.pack()
-        chk=["3dm","3dm2"]
-        for c in chk:
-            cb=tk.Checkbutton(threechkframe, text=c,pady=5)
+        chk=self.testerstates["3dmark"]
+        for index, c in enumerate(chk):            
+            cb=tk.Checkbutton(threechkframe, text=c,pady=5,variable=self.checkbox_states['3dmark'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
         
         
@@ -402,9 +419,9 @@ class logHelperApp:
         hwinfo64_label.pack(pady=(5,0))
         hw64chkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         hw64chkframe.pack()
-        chk=["hw64","hw642"]
-        for c in chk:
-            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5)
+        chk=self.testerstates["hwinfo64"]
+        for index, c in enumerate(chk):            
+            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5,variable=self.checkbox_states['hwinfo64'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
         
         #prime95 checkboxes
@@ -412,16 +429,28 @@ class logHelperApp:
         prime95_label.pack(pady=(10,0))
         p95frame=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         p95frame.pack()
-        chk=["a64","a642"]
-        for c in chk:
-            cb=tk.Checkbutton(p95frame, text=c,pady=5)
+        chk=self.testerstates["prime95"]
+        for index, c in enumerate(chk):            
+            cb=tk.Checkbutton(p95frame, text=c,pady=5,variable=self.checkbox_states['prime95'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
-        def img_stack_analysis():
-            print("bruhhhhh")
+        def run_analysis():
+        #getting parameters
+            params=[]
+            for key, vars_list in self.checkbox_states.items():
+                 for index, var in enumerate(vars_list):
+                    if var.get():
+                        #saving checkboxes checked.
+                        print(self.testerstates[key][index])
+                        params.append()
+            self.img_stack_analysis()
 
-        final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=img_stack_analysis, pady=10)
+        final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=run_analysis, pady=10)
         final_analyze_btn.pack(fill="x", pady=10)
+
+    #analysis
+    def img_stack_analysis(self):
+        print("ok")
 
 #主執行檔
 if __name__ == "__main__":
