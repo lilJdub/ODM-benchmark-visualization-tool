@@ -335,7 +335,7 @@ class logHelperApp:
     這裡是下半段的東西
     """
     def finalizeprocess2(self):
-        dict_path_df={}
+        self.dict_path_df={}
 
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
         #no need for later if f==none
@@ -351,10 +351,10 @@ class logHelperApp:
 
         #saving path into an array
         for path in f:
-            dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
+            self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
 
         #finding out path
-        for path, df in dict_path_df.items():
+        for path, df in self.dict_path_df.items():
             fin_check_label=tk.Label(fin_label_frame, text=path)
             fin_check_label.pack(pady=(10,0))
 
@@ -441,16 +441,29 @@ class logHelperApp:
                  for index, var in enumerate(vars_list):
                     if var.get():
                         #saving checkboxes checked.
-                        print(self.testerstates[key][index])
-                        params.append()
-            self.img_stack_analysis()
+                        params.append(self.testerstates[key][index])
+            self.img_stack_analysis(params)
 
         final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=run_analysis, pady=10)
-        final_analyze_btn.pack(fill="x", pady=10)
+        final_analyze_btn.pack(fill="x", pady=10, padx=5)
 
     #analysis
-    def img_stack_analysis(self):
-        print("ok")
+    def img_stack_analysis(self, params):
+        img_arr=[]
+        for p in params:
+            #see if everything is in place
+            for path, df in self.dict_path_df.items():
+                if p in df.columns:
+                    plt.plot(df[p], label=p+"")
+                else:
+                    print(p+" not in  this shit fam.")
+
+            plt.title(path+p)
+            plt.legend()
+            plt.show()
+            #換成存檔。
+            plt.close()
+
 
 #主執行檔
 if __name__ == "__main__":
