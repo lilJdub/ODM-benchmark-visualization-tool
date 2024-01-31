@@ -1,13 +1,11 @@
 import os
 import tkinter as tk
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import openpyxl
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
-from tkinter import Frame
 from openpyxl.drawing.image import Image
 from collections import defaultdict
 
@@ -60,8 +58,6 @@ class logHelperApp:
         self.root.attributes('-disabled', True)
 
         self.viswindow=tk.Toplevel(root)
-
-        vis_frame= tk.Frame(self.viswindow, bd=5, relief=tk.GROOVE)
 
         def on_close():
             # Enable interactions with the root window when the viswindow is closed
@@ -130,7 +126,7 @@ class logHelperApp:
         self.fileWin.withdraw()
 
         self.checkwin=tk.Toplevel(self.fileWin)
-        self.checkwin.geometry("300x100")
+        self.checkwin.geometry("400x100")
         self.checkwin.title("Loading")
         check_label=tk.Label(self.checkwin,text="checking data type, please wait.....")
         check_label.pack(side="top", fill="both", expand=True)
@@ -139,7 +135,14 @@ class logHelperApp:
         self.fileWin.update()
         
         #each file type
-        for path in f:    
+        for path in f:
+
+            #update loading window
+            loadmsg="Loading "+path
+            lm=tk.Label(self.checkwin,text=loadmsg)
+            lm.pack(side="top", fill="both", expand=True)
+            self.checkwin.update()
+
             #load and save df
             df=pd.read_csv(path,skipfooter=2,engine="python")
             fn = str(os.path.basename(path)).removesuffix(".csv")
@@ -191,6 +194,7 @@ class logHelperApp:
         
             #get an dictionary
             d=defaultdict(dict)
+            
             #checking each individual files for usage
             for file_path, file_checkboxes in checkbox_file_association:
                 file_name = str(os.path.basename(file_path)).removesuffix(".csv")
@@ -198,9 +202,17 @@ class logHelperApp:
                     chkboxtext=cb.cget("text")
                     #d: filename in first layer, then a dictionary of checkbox-state in value set
                     d[file_name][chkboxtext]=cb.var.get()
-            self.visualize_and_merge_files(self.dfPile,d)
+            
+            try:
+                self.visualize_and_merge_files(self.dfPile,d)
+            except Exception as e:
+                self.loadwin.destroy()
+                messagebox.showerror("Something occured", "Most likely youve chaosen the wrong format. Please choose a correct format. "+ str(e))
+                self.fileWin.destroy()
+                return
             #d: 3DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
-            self.loadwin.destroy
+            self.loadwin.destroy()
+            
 
         #Submit button for the next step
         submit_category=tk.Button(self.fileWin, text="Submit file", command=run_cat_files, padx=10,pady=10)
@@ -221,7 +233,7 @@ class logHelperApp:
             #The column in df (without duplicates)
             column_sets=set()
             
-            #switch based on val
+            #switch based on val: add the criteria that needs to be visualized
             for k,v in val.items():
                 if v==1:
                     match k:
@@ -245,7 +257,7 @@ class logHelperApp:
             self.visualize_merge_docs(file_name,column_sets,dfPile[file_name])
 
         #merge the whole chart into a single document
-        self.mergecharts(self.charts)
+        self.mergecharts(self.charts, 1)
         
         #wrap up
         csv_name=self.totalname +"_log_files.csv"
@@ -257,7 +269,8 @@ class logHelperApp:
         """
         the actual finishing point
         """
-        tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
+        if len(self.charts)!=0:
+            tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
 
         self.viswindow.destroy()
  
@@ -290,18 +303,29 @@ class logHelperApp:
                 er.pack(side="top", fill="both", expand=True)
                 self.loadwin.update()
             plt.close()
-        
-        # add df name to chart header : preparation for merging documentation 
-        new_row = [file_name] * (len(df.columns))
-        df.loc[0] = new_row
-        df.index = df.index + 1
-        df = df.sort_index()
 
-        # merge into final document
-        self.merge_df(df)
+        # Foolproof: if theres no charts then stop rest of the program
+        if len(self.charts)==0:
+            tk.messagebox.showwarning(title="Wrong data", message="No available charts for "+file_name+", please check if the data has the correct format.")
+            return
+        
+        else:
+            # add df name to chart header : preparation for merging documentation 
+            new_row = [file_name] * (len(df.columns))
+            df.loc[0] = new_row
+            df.index = df.index + 1
+            df = df.sort_index()
+
+            # merge into final document
+            self.merge_df(df)
 
     #place the charts into a single file
-    def mergecharts(self,charts):
+    def mergecharts(self,charts,gate):
+            
+            if len(self.charts)==0:
+                tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
+                return
+            
             workbook = openpyxl.Workbook()
             #圖像化部分
             worksheet = workbook.active
@@ -313,14 +337,21 @@ class logHelperApp:
                     i=i+40
                     cell="A"+str(i)
                     worksheet.add_image(img,cell)
-                excel_file_name = self.totalname+'_visualization.xlsx'
-                workbook.save(excel_file_name)
-
-                for chartpath in charts:
-                    imgpath=str(chartpath)
-                    os.remove(chartpath)
             except Exception as e:
                 print(e)
+                
+            #separate visualization names for log/img stacking
+            if gate==1:
+                excel_file_name = self.totalname+'_visualization.xlsx'
+            elif gate==2:
+                excel_file_name = "final_viz.xlsx"
+                
+            workbook.save(excel_file_name)
+
+            for chartpath in charts:
+                imgpath=str(chartpath)
+                os.remove(chartpath)
+            
 
     #Bassic logics of loading the chart.
     def merge_df(self,df):
@@ -328,19 +359,33 @@ class logHelperApp:
             self.merged_df=df
         else:
             self.merged_df=pd.concat([self.merged_df, df], axis=1)
-
-
     
     """
-    這裡是下半段的東西
+    Second function of the tool
     """
+
     def finalizeprocess2(self):
+
+        # Now Loading pop-up-window
+        fin_loading_window = tk.Toplevel(self.root)
+        fin_loading_window.geometry("300x100")
+        fin_loading_label = tk.Label(fin_loading_window, text="Now Loading...")
+        fin_loading_label.pack(side="top", fill="both", expand=True)
+        
+
         self.dict_path_df={}
 
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
+
+        #loading window to the top of all windows
+        fin_loading_window.lift()
+
         #no need for later if f==none
-        if f==None:
+        if not f:
             return
+        for path in f:
+            self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
+
         #the window for checkboxes
         self.final_checkwin=tk.Toplevel(root)
         fin_label_frame=tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
@@ -350,9 +395,7 @@ class logHelperApp:
         fin_label1.pack()
 
         #saving path into an array
-        for path in f:
-            self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
-
+        
         #finding out path
         for path, df in self.dict_path_df.items():
             fin_check_label=tk.Label(fin_label_frame, text=path)
@@ -434,6 +477,7 @@ class logHelperApp:
             cb=tk.Checkbutton(p95frame, text=c,pady=5,variable=self.checkbox_states['prime95'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
+        fin_loading_window.destroy()
         def run_analysis():
         #getting parameters
             params=[]
@@ -449,21 +493,27 @@ class logHelperApp:
 
     #analysis
     def img_stack_analysis(self, params):
-        img_arr=[]
+        f_charts=[]
         for p in params:
             #see if everything is in place
             for path, df in self.dict_path_df.items():
                 if p in df.columns:
                     plt.plot(df[p], label=p+"")
                 else:
-                    print(p+" not in  this shit fam.")
+                    print(p+" not available in data provided.")
 
             plt.title(path+p)
             plt.legend()
-            plt.show()
-            #換成存檔。
-            plt.close()
 
+            #saving charts stacked into a file.
+            analysis_chartname=path+"_"+p+".png"
+            plt.savefig(analysis_chartname)
+            f_charts.append(analysis_chartname)
+            plt.close()
+        
+        self.mergecharts(f_charts, 2)
+        tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
+        self.final_checkwin.destroy()
 
 #主執行檔
 if __name__ == "__main__":
