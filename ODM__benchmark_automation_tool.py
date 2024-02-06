@@ -2,6 +2,7 @@ import os
 import tkinter as tk
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import openpyxl
 from tkinter import ttk
 from tkinter import filedialog
@@ -58,6 +59,7 @@ class logHelperApp:
         self.root.attributes('-disabled', True)
 
         self.viswindow=tk.Toplevel(root)
+        self.viswindow.geometry(self.root.geometry())
 
         def on_close():
             # Enable interactions with the root window when the viswindow is closed
@@ -68,7 +70,6 @@ class logHelperApp:
         self.viswindow.bind("<Destroy>", lambda e: on_close())
 
         self.viswindow.title("檔案類型選擇")
-        self.viswindow.geometry("400x600")
         self.viswindow.resizable(False,False)
 
         projectLabel = tk.Label(self.viswindow,text="Enter Project Name")
@@ -125,26 +126,31 @@ class logHelperApp:
         self.fileWin.title("File Type")
         self.fileWin.withdraw()
 
-        self.checkwin=tk.Toplevel(self.fileWin)
-        self.checkwin.geometry("400x100")
-        self.checkwin.title("Loading")
-        check_label=tk.Label(self.checkwin,text="checking data type, please wait.....")
+        #loading win
+        self.check_load_win=tk.Toplevel(self.fileWin)
+        self.check_load_win.geometry("400x100")
+        self.check_load_win.title("Loading")
+        check_label=tk.Label(self.check_load_win,text="checking data type, please wait.....")
         check_label.pack(side="top", fill="both", expand=True)
+        check_load_win_label=tk.Label(self.check_load_win,text="Now loading file : 0/"+str(len(f)))
+        check_load_win_label.pack(side="top", fill="both", expand=True)
+        clw_counter=0
         
         #update UI
         self.fileWin.update()
         
         #each file type
         for path in f:
-
-            #update loading window
-            loadmsg="Loading "+path
-            lm=tk.Label(self.checkwin,text=loadmsg)
-            lm.pack(side="top", fill="both", expand=True)
-            self.checkwin.update()
+            
+            #update loading window information
+            clw_counter+=1
+            check_load_win_label.config(text="Now loading file :"+str(clw_counter)+"/"+str(len(f)))
+            
+            self.check_load_win.minsize(self.check_load_win.winfo_reqwidth(), self.check_load_win.winfo_reqheight())
+            self.check_load_win.update()
 
             #load and save df
-            df=pd.read_csv(path,skipfooter=2,engine="python")
+            df=pd.read_csv(path,skipfooter=2,engine="python",encoding='iso-8859-1')
             fn = str(os.path.basename(path)).removesuffix(".csv")
             #save dict into dictionary
             self.dfPile[fn]=df
@@ -154,7 +160,7 @@ class logHelperApp:
             label.pack()
             self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)
             
-            fileTools=["AIDA64","Furmark", "3DMark","HWInfo64","Prime95"]
+            fileTools=["Furmark","HWInfo64"]
             file_checkboxes = []
             for name in fileTools:
                 var=tk.IntVar()
@@ -164,15 +170,9 @@ class logHelperApp:
                 file_checkboxes.append(checkbox)
 
                 #Check boxes based on df
-                if df.columns[2]=="3DMark3DMark" and name =="3DMark" :
+                if df.columns[0]=="Date" and name =="HWInfo64":
                     checkbox.select()
-                if df.columns[3]=="AIDA64AIDA64" and name =="AIDA64":
-                    checkbox.select()
-                if df.columns[4]=="HWINFO64HWINFO64" and name =="HWInfo64":
-                    checkbox.select()
-                if df.columns[5]=="FurmarkFurmark" and name =="Furmark":
-                    checkbox.select()
-                if df.columns[6]=="P95P95" and name =="Prime95":
+                if df.columns[0]=="Renderer" and name =="Furmark":
                     checkbox.select()
 
             # Store the association between checkboxes and the current file
@@ -207,7 +207,7 @@ class logHelperApp:
                 self.visualize_and_merge_files(self.dfPile,d)
             except Exception as e:
                 self.loadwin.destroy()
-                messagebox.showerror("Something occured", "Most likely youve chaosen the wrong format. Please choose a correct format. "+ str(e))
+                messagebox.showerror("Something occured", "Most likely youve chosen the wrong format. Please choose a correct format. "+ str(e))
                 self.fileWin.destroy()
                 return
             #d: 3DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
@@ -219,7 +219,7 @@ class logHelperApp:
         submit_category.pack(pady=10)
 
         self.fileWin.deiconify()
-        self.checkwin.destroy()
+        self.check_load_win.destroy()
 
         self.fileWin.grab_set()
 
@@ -237,21 +237,16 @@ class logHelperApp:
             for k,v in val.items():
                 if v==1:
                     match k:
-                        case "AIDA64":
-                            column_sets.add("a64")
-                            column_sets.add("a642")
                         case "Furmark":
-                            column_sets.add("fm")
-                            column_sets.add("fm2")
-                        case "3DMark":
-                            column_sets.add("3dm")
-                            column_sets.add("3dm2")
+                            column_sets.add("gpu_power")
                         case "HWInfo64":
-                            column_sets.add("hw64")
-                            column_sets.add("hw642")
-                        case "Prime95":
-                            column_sets.add("p95")
-                            column_sets.add("p952")
+                            column_sets.add("CPU Package Power [W]")
+                            column_sets.add("CPU Package [W]")
+                            column_sets.add("IA Cores Power [W]")
+                            column_sets.add("GT Cores Power [W]")
+                            column_sets.add("GPU Power [W]")
+                            column_sets.add("System Agent Power [W]")
+                            column_sets.add("Total Graphics Power")
 
             #visualize key(chart name),col_sets(the columns that needed to be visualized)
             self.visualize_merge_docs(file_name,column_sets,dfPile[file_name])
@@ -322,7 +317,7 @@ class logHelperApp:
     #place the charts into a single file
     def mergecharts(self,charts,gate):
             
-            if len(self.charts)==0:
+            if len(charts)==0:
                 tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
                 return
             
@@ -367,9 +362,9 @@ class logHelperApp:
     def finalizeprocess2(self):
 
         # Now Loading pop-up-window
-        fin_loading_window = tk.Toplevel(self.root)
-        fin_loading_window.geometry("300x100")
-        fin_loading_label = tk.Label(fin_loading_window, text="Now Loading...")
+        self.fin_loading_window = tk.Toplevel(self.root)
+        self.fin_loading_window.geometry("300x100")
+        fin_loading_label = tk.Label(self.fin_loading_window, text="Now Loading...")
         fin_loading_label.pack(side="top", fill="both", expand=True)
         
 
@@ -378,7 +373,7 @@ class logHelperApp:
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
 
         #loading window to the top of all windows
-        fin_loading_window.lift()
+        self.fin_loading_window.lift()
 
         #no need for later if f==none
         if not f:
@@ -388,6 +383,7 @@ class logHelperApp:
 
         #the window for checkboxes
         self.final_checkwin=tk.Toplevel(root)
+        self.final_checkwin.geometry(self.root.geometry())
         fin_label_frame=tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
         fin_label_frame.pack()
         
@@ -398,7 +394,7 @@ class logHelperApp:
         
         #finding out path
         for path, df in self.dict_path_df.items():
-            fin_check_label=tk.Label(fin_label_frame, text=path)
+            fin_check_label=tk.Label(fin_label_frame, text=path ,padx=10)
             fin_check_label.pack(pady=(10,0))
 
         #frame below for checkboxes
@@ -477,7 +473,7 @@ class logHelperApp:
             cb=tk.Checkbutton(p95frame, text=c,pady=5,variable=self.checkbox_states['prime95'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
-        fin_loading_window.destroy()
+        self.fin_loading_window.destroy()
         def run_analysis():
         #getting parameters
             params=[]
@@ -490,6 +486,11 @@ class logHelperApp:
 
         final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=run_analysis, pady=10)
         final_analyze_btn.pack(fill="x", pady=10, padx=5)
+
+        #resizing window for oversizing
+        self.final_checkwin.update()
+        self.final_checkwin.minsize(self.final_checkwin.winfo_reqwidth(), self.final_checkwin.winfo_reqheight())
+        
 
     #analysis
     def img_stack_analysis(self, params):
