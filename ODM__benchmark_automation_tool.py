@@ -14,6 +14,7 @@ from collections import defaultdict
 import ttkbootstrap
 
 class logHelperApp:
+
     #initialize root window
     def __init__(self,root):
         style=ttkbootstrap.Style(theme="flatly")
@@ -38,7 +39,7 @@ class logHelperApp:
         # 創建上半部的框架
         top_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         top_frame.pack(side="top", fill="both", expand=True)
-        submitlabel=tk.Label(top_frame,text="Select Files")
+        submitlabel=tk.Label(top_frame,text="Visualize Files\n視覺化檔案")
         submitlabel.pack(side="top", pady=20)
         submitButton = tk.Button(top_frame,text="Select Files",command=self.create_vis_window)
         submitButton.config(padx=80,pady=40,anchor="center")
@@ -47,9 +48,9 @@ class logHelperApp:
         # 創建下半部的框架
         bottom_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         bottom_frame.pack(side="top", fill="both", expand=True)
-        finalizelabel=tk.Label(bottom_frame,text="final results")
+        finalizelabel=tk.Label(bottom_frame,text="Stacking analysis\n疊圖分析")
         finalizelabel.pack(side="top", pady=20)
-        finalizeButton = tk.Button(bottom_frame,text="final results",command=self.finalizeprocess2)
+        finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess2)
         finalizeButton.config(padx=80,pady=40,anchor="center")
         finalizeButton.pack(side="top",pady=40)
 
@@ -113,7 +114,6 @@ class logHelperApp:
         self.dfPile={}
         checkbox_file_association = []
 
-
         #Choose files for using
         f=filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
         #check if f is emnpty
@@ -141,7 +141,7 @@ class logHelperApp:
         
         #each file type
         for path in f:
-            
+                
             #update loading window information
             clw_counter+=1
             check_load_win_label.config(text="Now loading file :"+str(clw_counter)+"/"+str(len(f)))
@@ -150,7 +150,8 @@ class logHelperApp:
             self.check_load_win.update()
 
             #load and save df
-            df=pd.read_csv(path,skipfooter=2,engine="python",encoding='iso-8859-1')
+            df=pd.read_csv(path,skipfooter=2,engine="python",encoding="ANSI", on_bad_lines='skip', index_col=False)
+
             fn = str(os.path.basename(path)).removesuffix(".csv")
             #save dict into dictionary
             self.dfPile[fn]=df
@@ -203,6 +204,7 @@ class logHelperApp:
                     #d: filename in first layer, then a dictionary of checkbox-state in value set
                     d[file_name][chkboxtext]=cb.var.get()
             
+            #Working on here:            
             try:
                 self.visualize_and_merge_files(self.dfPile,d)
             except Exception as e:
@@ -210,6 +212,7 @@ class logHelperApp:
                 messagebox.showerror("Something occured", "Most likely youve chosen the wrong format. Please choose a correct format. "+ str(e))
                 self.fileWin.destroy()
                 return
+            
             #d: 3DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
             self.loadwin.destroy()
             
@@ -333,7 +336,7 @@ class logHelperApp:
                     cell="A"+str(i)
                     worksheet.add_image(img,cell)
             except Exception as e:
-                print(e)
+                tk.messagebox.showwarning(title="Exception happened", message=str(e))
                 
             #separate visualization names for log/img stacking
             if gate==1:
@@ -358,9 +361,11 @@ class logHelperApp:
     """
     Second function of the tool
     """
-
     def finalizeprocess2(self):
-
+        tk.messagebox.showwarning(title="Under construction", message="Not available in this vession yet.")
+        
+    def finalizeprocess(self):
+        
         # Now Loading pop-up-window
         self.fin_loading_window = tk.Toplevel(self.root)
         self.fin_loading_window.geometry("300x100")
