@@ -50,7 +50,7 @@ class logHelperApp:
         bottom_frame.pack(side="top", fill="both", expand=True)
         finalizelabel=tk.Label(bottom_frame,text="Stacking analysis\n疊圖分析")
         finalizelabel.pack(side="top", pady=20)
-        finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess2)
+        finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess)
         finalizeButton.config(padx=80,pady=40,anchor="center")
         finalizeButton.pack(side="top",pady=40)
 
@@ -141,7 +141,7 @@ class logHelperApp:
         
         #each file type
         for path in f:
-                
+
             #update loading window information
             clw_counter+=1
             check_load_win_label.config(text="Now loading file :"+str(clw_counter)+"/"+str(len(f)))
@@ -162,7 +162,8 @@ class logHelperApp:
             self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)
             
             fileTools=["Furmark","HWInfo64"]
-            file_checkboxes = []
+            self.file_checkboxes = []
+            """
             for name in fileTools:
                 var=tk.IntVar()
                 checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var,pady=5)
@@ -176,8 +177,37 @@ class logHelperApp:
                 if df.columns[0]=="Renderer" and name =="Furmark":
                     checkbox.select()
 
+            """
+            
+
+            #furmark checkbox:
+            f_var=tk.IntVar()
+            f_checkbox=tk.Checkbutton(self.checkbox_frame, text="furmark",variable=f_var,pady=5)
+            f_checkbox.var=f_var
+            f_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(f_checkbox)
+
+            #HWINFO checkbox:
+            hw_var=tk.IntVar()
+            hw_checkbox=tk.Checkbutton(self.checkbox_frame, text="HWInfo64",variable=hw_var,pady=5,command=self.add_tpp_check)
+            hw_checkbox.var=hw_var
+            hw_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(hw_checkbox)
+
+            #TPP:
+            tp_var=tk.IntVar()
+            self.tpp_checkbox=tk.Checkbutton(self.checkbox_frame, text="TPP (Optional)",variable=tp_var,pady=5)
+            self.tpp_checkbox.var=tp_var
+
+            #check boxes based on df types
+            if df.columns[0]=="Renderer":
+                f_checkbox.select()
+            if df.columns[0]=="Date":
+                hw_checkbox.select()
+                self.add_tpp_check()
+
             # Store the association between checkboxes and the current file
-            checkbox_file_association.append((path, file_checkboxes))
+            checkbox_file_association.append((path, self.file_checkboxes))
 
             # Pack Checkbuttons Frame to the main frames
             self.checkbox_frame.pack()
@@ -204,7 +234,7 @@ class logHelperApp:
                     #d: filename in first layer, then a dictionary of checkbox-state in value set
                     d[file_name][chkboxtext]=cb.var.get()
             
-            #Working on here:            
+            #process format
             try:
                 self.visualize_and_merge_files(self.dfPile,d)
             except Exception as e:
@@ -250,6 +280,8 @@ class logHelperApp:
                             column_sets.add("GPU Power [W]")
                             column_sets.add("System Agent Power [W]")
                             column_sets.add("Total Graphics Power")
+                        case "TPP (Optional)":
+                            column_sets.add("TPP")
 
             #visualize key(chart name),col_sets(the columns that needed to be visualized)
             self.visualize_merge_docs(file_name,column_sets,dfPile[file_name])
@@ -271,7 +303,15 @@ class logHelperApp:
             tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
 
         self.viswindow.destroy()
- 
+    
+    #shows TPP when hwinfo64 is selected
+    def add_tpp_check(self):
+        if self.tpp_checkbox not in self.file_checkboxes:
+            self.file_checkboxes.append(self.tpp_checkbox)
+            self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+        else:
+            self.file_checkboxes.remove(self.tpp_checkbox)
+            self.tpp_checkbox.pack_forget()
 
     def visualize_merge_docs(self,file_name,column_sets,df):
         #Visualize docs using the columns mentioned
@@ -293,7 +333,12 @@ class logHelperApp:
                 #place all chart names in a array.
                 self.charts.append(chartname)
                 #save charts in the asame folder
-                plt.savefig(chartname)                               
+                plt.savefig(chartname)
+
+            #TPP needs special calculations for the hub
+            elif col=="TPP":
+                print("TPP")
+
             # if col inot in df[col]: print error message
             else:
                 errmsg="the column: "+col +" is not in the data."
