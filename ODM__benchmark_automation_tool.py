@@ -256,6 +256,15 @@ class logHelperApp:
 
         self.fileWin.grab_set()
 
+    #shows TPP when hwinfo64 is selected
+    def add_tpp_check(self):
+        if self.tpp_checkbox not in self.file_checkboxes:
+            self.file_checkboxes.append(self.tpp_checkbox)
+            self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+        else:
+            self.file_checkboxes.remove(self.tpp_checkbox)
+            self.tpp_checkbox.pack_forget()
+
     #main hub for visualization and merging
     def visualize_and_merge_files(self,dfPile,d):
         self.merged_df=pd.DataFrame()
@@ -303,16 +312,7 @@ class logHelperApp:
             tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
 
         self.viswindow.destroy()
-    
-    #shows TPP when hwinfo64 is selected
-    def add_tpp_check(self):
-        if self.tpp_checkbox not in self.file_checkboxes:
-            self.file_checkboxes.append(self.tpp_checkbox)
-            self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
-        else:
-            self.file_checkboxes.remove(self.tpp_checkbox)
-            self.tpp_checkbox.pack_forget()
-
+        
     def visualize_merge_docs(self,file_name,column_sets,df):
         #Visualize docs using the columns mentioned
         #place the df's chart in this array (one dataframe at a time)
@@ -332,12 +332,22 @@ class logHelperApp:
                 chartname=dataname+".png"
                 #place all chart names in a array.
                 self.charts.append(chartname)
-                #save charts in the asame folder
+                #save charts in the same folder
                 plt.savefig(chartname)
 
             #TPP needs special calculations for the hub
             elif col=="TPP":
-                print("TPP")
+                #ADD:
+                df["TPP"]=df["Physical Memory Used [MB]"].add(df["Physical Memory Available [MB]"])
+                data=df["TPP"]
+                dataname=str(file_name)+"_TPP"
+                plt.scatter(df.index,data)
+                plt.title(dataname)
+                plt.xlabel('Index')
+                plt.ylabel("TPP")
+                chartname=dataname+".png"
+                self.charts.append(chartname)
+                plt.savefig(chartname)
 
             # if col inot in df[col]: print error message
             else:
@@ -364,7 +374,6 @@ class logHelperApp:
 
     #place the charts into a single file
     def mergecharts(self,charts,gate):
-            
             if len(charts)==0:
                 tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
                 return
@@ -387,7 +396,7 @@ class logHelperApp:
             if gate==1:
                 excel_file_name = self.totalname+'_visualization.xlsx'
             elif gate==2:
-                excel_file_name = "final_viz.xlsx"
+                excel_file_name = self.combined_names+"final_viz.xlsx"
                 
             workbook.save(excel_file_name)
 
@@ -406,18 +415,13 @@ class logHelperApp:
     """
     Second function of the tool
     """
-    def finalizeprocess2(self):
-        tk.messagebox.showwarning(title="Under construction", message="Not available in this vession yet.")
         
     def finalizeprocess(self):
-        
+        self.combined_names=""
         # Now Loading pop-up-window
         self.fin_loading_window = tk.Toplevel(self.root)
         self.fin_loading_window.geometry("300x100")
-        fin_loading_label = tk.Label(self.fin_loading_window, text="Now Loading...")
-        fin_loading_label.pack(side="top", fill="both", expand=True)
         
-
         self.dict_path_df={}
 
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
@@ -440,98 +444,59 @@ class logHelperApp:
         fin_label1=tk.Label(fin_label_frame, text="Files chosen are: ")
         fin_label1.pack()
 
-        #saving path into an array
-        
         #finding out path
         for path, df in self.dict_path_df.items():
+            self.combined_names=self.combined_names+"_"+os.path.basename(path).removesuffix(".csv")
             fin_check_label=tk.Label(fin_label_frame, text=path ,padx=10)
             fin_check_label.pack(pady=(10,0))
 
         #frame below for checkboxes
         fin_check_frame= tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
-        fin_check_frame.pack(fill="x",expand=True)
+        fin_check_frame.pack(fill="both",expand=True)
 
         #choosing and setting the criteria of each df
         fin_label2=tk.Label(fin_check_frame, text="Choose the criteria.")
         fin_label2.pack()
 
-        #Saving states of checkboxes
-        self.checkbox_states = {
-            'aida64': [tk.BooleanVar(), tk.BooleanVar()],
-            'furmark': [tk.BooleanVar(), tk.BooleanVar()],
-            '3dmark': [tk.BooleanVar(), tk.BooleanVar()],
-            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar()],
-            'prime95': [tk.BooleanVar(), tk.BooleanVar()]
+        self.chkbox_states= {
+            'furmark': [tk.BooleanVar()],
+            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
         }
 
-        self.testerstates={
-            'aida64': ["a64","a642"],
-            'furmark': ["fm","fm2"],
-            '3dmark': ["3dm","3dm2"],
-            'hwinfo64': ["hw64","hw642"],
-            'prime95': ["p95","p952"]
+        self.t_states={
+            'furmark': ["gpu_power"],
+            'hwinfo64': ["System Agent Power [W]","GPU Power [W]","IA Cores Power [W]","GT Cores Power [W]","CPU Package Power [W]" ]
         }
-
-        #AIDA64 checkboxes
-        aida_label = tk.Label(fin_check_frame, text="AIDA64")
-        aida_label.pack(pady=(5,0))
-        aidachkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
-        aidachkframe.pack()
-        chk=self.testerstates["aida64"]
-        for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(aidachkframe, text=c,pady=5,variable=self.checkbox_states['aida64'][index])
-            cb.pack(side=tk.LEFT, anchor=tk.W)
-
+        
         #Furmark checkboxes
         furmark_label = tk.Label(fin_check_frame, text="Furmark")
         furmark_label.pack(pady=(5,0))
         fmchkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         fmchkframe.pack()
-        chk=self.testerstates["furmark"]
+        chk=self.t_states["furmark"]
         for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(fmchkframe, text=c,pady=5,variable=self.checkbox_states['furmark'][index])
+            cb=tk.Checkbutton(fmchkframe, text=c,pady=5,variable=self.chkbox_states['furmark'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
-        #3Dmark checkboxes
-        threedmark_label = tk.Label(fin_check_frame, text="3DMark")
-        threedmark_label.pack(pady=(5,0))
-        threechkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
-        threechkframe.pack()
-        chk=self.testerstates["3dmark"]
-        for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(threechkframe, text=c,pady=5,variable=self.checkbox_states['3dmark'][index])
-            cb.pack(side=tk.LEFT, anchor=tk.W)
-        
-        
         #hwinfo64 checkboxes
         hwinfo64_label = tk.Label(fin_check_frame, text="HWinfo 64")
         hwinfo64_label.pack(pady=(5,0))
         hw64chkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         hw64chkframe.pack()
-        chk=self.testerstates["hwinfo64"]
+        chk=self.t_states["hwinfo64"]
         for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5,variable=self.checkbox_states['hwinfo64'][index])
+            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5,variable=self.chkbox_states['hwinfo64'][index])
             cb.pack(side=tk.LEFT, anchor=tk.W)
         
-        #prime95 checkboxes
-        prime95_label = tk.Label(fin_check_frame, text="Prime95")
-        prime95_label.pack(pady=(10,0))
-        p95frame=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
-        p95frame.pack()
-        chk=self.testerstates["prime95"]
-        for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(p95frame, text=c,pady=5,variable=self.checkbox_states['prime95'][index])
-            cb.pack(side=tk.LEFT, anchor=tk.W)
-
         self.fin_loading_window.destroy()
         def run_analysis():
         #getting parameters
             params=[]
-            for key, vars_list in self.checkbox_states.items():
+            for key, vars_list in self.chkbox_states.items():
                  for index, var in enumerate(vars_list):
                     if var.get():
                         #saving checkboxes checked.
-                        params.append(self.testerstates[key][index])
+                        params.append(self.t_states[key][index])
             self.img_stack_analysis(params)
 
         final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=run_analysis, pady=10)
@@ -546,24 +511,27 @@ class logHelperApp:
     def img_stack_analysis(self, params):
         f_charts=[]
         for p in params:
+            analysis_chartname=""
             #see if everything is in place
             for path, df in self.dict_path_df.items():
                 if p in df.columns:
-                    plt.plot(df[p], label=p+"")
+                    file_basename=os.path.basename(path).removesuffix(".csv")
+                    plt.plot(df[p], label=file_basename,alpha=0.6)
+                    plt.title(p)
+                    plt.legend()
+                    analysis_chartname=path+"_"+p+".png"
                 else:
                     print(p+" not available in data provided.")
 
-            plt.title(path+p)
-            plt.legend()
-
             #saving charts stacked into a file.
-            analysis_chartname=path+"_"+p+".png"
-            plt.savefig(analysis_chartname)
-            f_charts.append(analysis_chartname)
-            plt.close()
+            if analysis_chartname:
+                plt.savefig(analysis_chartname)
+                f_charts.append(analysis_chartname)
+                plt.close()
         
         self.mergecharts(f_charts, 2)
-        tk.messagebox.showwarning(title="Document generation done", message="Finished generating documents. Please check file folder.")
+        if len(f_charts)>0:
+            tk.messagebox.showwarning(title="Process done", message="Finished generating documents. Please check file folder.")
         self.final_checkwin.destroy()
 
 #主執行檔
