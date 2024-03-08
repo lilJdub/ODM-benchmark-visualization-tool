@@ -7,6 +7,7 @@ import openpyxl
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import Entry
 from openpyxl.drawing.image import Image
 from collections import defaultdict
 
@@ -23,7 +24,6 @@ class logHelperApp:
         #Placing and initiation of the objects and windows.
         self.root = root
         self.root.title("LogHelper Widget")
-        self.root.geometry("400x600")
         self.root.resizable(False, False)
         
         #Windows
@@ -31,24 +31,49 @@ class logHelperApp:
         self.fileWin=None
         self.typeWin=None
         
-        
         self.merged_df=pd.DataFrame()
         self.totalname=""
+
+        #Criterias of each graph
+        self.cpu_criteria=None
+        self.gpu_criteria=None
+        self.tpp_criteria=None
+        self.threshhold_criteria=None
+
 
         #Button & Frame
         # 創建上半部的框架
         top_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         top_frame.pack(side="top", fill="both", expand=True)
-        submitlabel=tk.Label(top_frame,text="Visualize Files\n視覺化檔案")
-        submitlabel.pack(side="top", pady=20)
+        submitlabel=tk.Label(top_frame,text="Visualize & concat Files\n\n視覺化檔案並產出總檔")
+        submitlabel.pack(side="top", pady=10)
         submitButton = tk.Button(top_frame,text="Select Files",command=self.create_vis_window)
         submitButton.config(padx=80,pady=40,anchor="center")
-        submitButton.pack(side="top",pady=40)
+        submitButton.pack(side="top",pady=20)
+        #上半部criteria 部分
+        criteria_frame=tk.Frame(top_frame, bd=5, relief=tk.GROOVE)
+        CPU_label=tk.Label(criteria_frame,text="CPU :")
+        self.CPU_entry=tk.Entry(criteria_frame)
+        GPU_Label=tk.Label(criteria_frame,text="GPU :")
+        self.GPU_entry=tk.Entry(criteria_frame)
+        TPP_label=tk.Label(criteria_frame,text="TPP :")
+        self.TPP_entry=tk.Entry(criteria_frame)
+        threshold_label=tk.Label(criteria_frame,text="thresh % :")
+        self.threshold_entry=tk.Entry(criteria_frame)
+        criteria_frame.pack(side="top", fill="both", expand=True)
+        CPU_label.grid(row=0,column=0)
+        self.CPU_entry.grid(row=1,column=0)
+        GPU_Label.grid(row=0,column=1)
+        self.GPU_entry.grid(row=1,column=1)
+        TPP_label.grid(row=0,column=2)
+        self.TPP_entry.grid(row=1,column=2)
+        threshold_label.grid(row=0,column=3)
+        self.threshold_entry.grid(row=1,column=3)
         
         # 創建下半部的框架
         bottom_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         bottom_frame.pack(side="top", fill="both", expand=True)
-        finalizelabel=tk.Label(bottom_frame,text="Stacking analysis\n疊圖分析")
+        finalizelabel=tk.Label(bottom_frame,text="Stacking analysis\n疊圖分析\n\n(Disclaimer: 請使用視覺化產出的總檔來做分析)")
         finalizelabel.pack(side="top", pady=20)
         finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess)
         finalizeButton.config(padx=80,pady=40,anchor="center")
@@ -56,6 +81,8 @@ class logHelperApp:
 
     #Visualization Windows.
     def create_vis_window(self):
+        print(self.CPU_entry.get())
+
         #disable interactions w/root
         self.root.attributes('-disabled', True)
 
@@ -150,7 +177,11 @@ class logHelperApp:
             self.check_load_win.update()
 
             #load and save df
-            df=pd.read_csv(path,skipfooter=2,engine="python",encoding="ANSI", on_bad_lines='skip', index_col=False)
+            try:
+                df=pd.read_csv(path,skipfooter=2,engine="python",encoding="ANSI", on_bad_lines='skip', index_col=False)
+            except UnicodeDecodeError:
+                messagebox.showwarning("Error", "UnicodeDecodeError occurred. Please check the file encoding.")
+                return
 
             fn = str(os.path.basename(path)).removesuffix(".csv")
             #save dict into dictionary
@@ -163,22 +194,6 @@ class logHelperApp:
             
             fileTools=["Furmark","HWInfo64"]
             self.file_checkboxes = []
-            """
-            for name in fileTools:
-                var=tk.IntVar()
-                checkbox=tk.Checkbutton(self.checkbox_frame, text=name,variable=var,pady=5)
-                checkbox.var=var
-                checkbox.pack(side=tk.LEFT, anchor=tk.W)
-                file_checkboxes.append(checkbox)
-
-                #Check boxes based on df
-                if df.columns[0]=="Date" and name =="HWInfo64":
-                    checkbox.select()
-                if df.columns[0]=="Renderer" and name =="Furmark":
-                    checkbox.select()
-
-            """
-            
 
             #furmark checkbox:
             f_var=tk.IntVar()
@@ -337,17 +352,30 @@ class logHelperApp:
 
             #TPP needs special calculations for the hub
             elif col=="TPP":
-                #ADD:
-                df["TPP"]=df["Physical Memory Used [MB]"].add(df["Physical Memory Available [MB]"])
+                #take care of multiple column names
+                if "CPU Package Power [W]" in df.columns:
+                    cpu=df["CPU Package Power [W]"]
+                elif "CPU Package [W]" in df.columns:
+                    cpu=df["CPU Package [W]"]
+                else: cpu=None
+                if "GPU Power [W]" in df.columns:
+                    gpu=df["GPU Power [W]"]
+                elif "Total Graphics Power" in df.columns:
+                    gpu=df["Total Graphics Power"]
+                else: gpu=None
+                #calculations for tpp:
+                df["TPP"]=cpu.add(gpu)
                 data=df["TPP"]
                 dataname=str(file_name)+"_TPP"
-                plt.scatter(df.index,data)
+                plt.plot(df.index,data)
                 plt.title(dataname)
                 plt.xlabel('Index')
                 plt.ylabel("TPP")
                 chartname=dataname+".png"
                 self.charts.append(chartname)
                 plt.savefig(chartname)
+
+                #saving 
 
             # if col inot in df[col]: print error message
             else:
@@ -396,7 +424,7 @@ class logHelperApp:
             if gate==1:
                 excel_file_name = self.totalname+'_visualization.xlsx'
             elif gate==2:
-                excel_file_name = self.combined_names+"final_viz.xlsx"
+                excel_file_name = self.combined_names+"_final_viz.xlsx"
                 
             workbook.save(excel_file_name)
 
@@ -418,22 +446,20 @@ class logHelperApp:
         
     def finalizeprocess(self):
         self.combined_names=""
-        # Now Loading pop-up-window
-        self.fin_loading_window = tk.Toplevel(self.root)
-        self.fin_loading_window.geometry("300x100")
         
         self.dict_path_df={}
 
         f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
 
-        #loading window to the top of all windows
-        self.fin_loading_window.lift()
-
         #no need for later if f==none
         if not f:
             return
         for path in f:
-            self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
+            try:
+                self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
+            except UnicodeDecodeError:
+                messagebox.showwarning("Error", "UnicodeDecodeError occurred. The file may have a differnt encoding.")
+                return
 
         #the window for checkboxes
         self.final_checkwin=tk.Toplevel(root)
@@ -460,12 +486,12 @@ class logHelperApp:
 
         self.chkbox_states= {
             'furmark': [tk.BooleanVar()],
-            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar()]
+            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(),tk.BooleanVar()]
         }
 
         self.t_states={
             'furmark': ["gpu_power"],
-            'hwinfo64': ["System Agent Power [W]","GPU Power [W]","IA Cores Power [W]","GT Cores Power [W]","CPU Package Power [W]" ]
+            'hwinfo64': ["System Agent Power [W]","GPU Power [W]","IA Cores Power [W]","GT Cores Power [W]","CPU Package Power [W]","TPP"]
         }
         
         #Furmark checkboxes
@@ -479,16 +505,15 @@ class logHelperApp:
             cb.pack(side=tk.LEFT, anchor=tk.W)
 
         #hwinfo64 checkboxes
-        hwinfo64_label = tk.Label(fin_check_frame, text="HWinfo 64")
+        hwinfo64_label = tk.Label(fin_check_frame, text="HWinfo 64",wraplength=100)
         hwinfo64_label.pack(pady=(5,0))
         hw64chkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
         hw64chkframe.pack()
         chk=self.t_states["hwinfo64"]
         for index, c in enumerate(chk):            
             cb=tk.Checkbutton(hw64chkframe, text=c,pady=5,variable=self.chkbox_states['hwinfo64'][index])
-            cb.pack(side=tk.LEFT, anchor=tk.W)
+            cb.pack(side=tk.TOP, anchor=tk.W)
         
-        self.fin_loading_window.destroy()
         def run_analysis():
         #getting parameters
             params=[]
@@ -511,17 +536,35 @@ class logHelperApp:
     def img_stack_analysis(self, params):
         f_charts=[]
         for p in params:
+            #P=boxes checked
             analysis_chartname=""
             #see if everything is in place
             for path, df in self.dict_path_df.items():
-                if p in df.columns:
-                    file_basename=os.path.basename(path).removesuffix(".csv")
-                    plt.plot(df[p], label=file_basename,alpha=0.6)
-                    plt.title(p)
-                    plt.legend()
-                    analysis_chartname=path+"_"+p+".png"
+                #if p = gpu
+                if p=="GPU Power [W]":
+                    if "GPU Power [W]" in df.columns:
+                        data=df["GPU Power [W]"]
+                    elif "Total Graphics Power"in df.columns:
+                        data=df["Total Graphics Power"]
+                    else:
+                        print(p+" not available in data provided.")
+                elif p=="CPU Package Power [W]":
+                    if "CPU Package Power [W]" in df.columns:
+                        data=df["CPU Package Power [W]"]
+                    elif "CPU Package [W]" in df.columns:
+                        data=df["CPU Package [W]"]
+                    else:
+                        print(p+" not available in data provided.")
                 else:
-                    print(p+" not available in data provided.")
+                    if p in df.columns:
+                        data=df[p]
+                    else:
+                        print(p+" not available in data provided.")
+                file_basename=os.path.basename(path).removesuffix(".csv")
+                plt.plot(data, label=file_basename,alpha=0.6)
+                plt.title(p)
+                plt.legend()
+                analysis_chartname=path+"_"+p+".png"
 
             #saving charts stacked into a file.
             if analysis_chartname:
@@ -535,7 +578,7 @@ class logHelperApp:
         self.final_checkwin.destroy()
 
 #主執行檔
-if __name__ == "__main__":
+if __name__ == "__main__":#
     root = tk.Tk()
     app = logHelperApp(root)
     root.mainloop()
