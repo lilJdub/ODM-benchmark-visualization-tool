@@ -34,13 +34,6 @@ class logHelperApp:
         self.merged_df=pd.DataFrame()
         self.totalname=""
 
-        #Criterias of each graph
-        self.cpu_criteria=None
-        self.gpu_criteria=None
-        self.tpp_criteria=None
-        self.threshhold_criteria=None
-
-
         #Button & Frame
         # 創建上半部的框架
         top_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
@@ -53,13 +46,13 @@ class logHelperApp:
         #上半部criteria 部分
         criteria_frame=tk.Frame(top_frame, bd=5, relief=tk.GROOVE)
         CPU_label=tk.Label(criteria_frame,text="CPU :")
-        self.CPU_entry=tk.Entry(criteria_frame)
+        self.CPU_entry=tk.Entry(criteria_frame,validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), justify="center")
         GPU_Label=tk.Label(criteria_frame,text="GPU :")
-        self.GPU_entry=tk.Entry(criteria_frame)
+        self.GPU_entry=tk.Entry(criteria_frame,validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), justify="center")
         TPP_label=tk.Label(criteria_frame,text="TPP :")
-        self.TPP_entry=tk.Entry(criteria_frame)
-        threshold_label=tk.Label(criteria_frame,text="thresh % :")
-        self.threshold_entry=tk.Entry(criteria_frame)
+        self.TPP_entry=tk.Entry(criteria_frame,validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), justify="center")
+        threshold_label=tk.Label(criteria_frame,text="threshold (NOTE : %) :")
+        self.threshold_entry=tk.Entry(criteria_frame,validate="key", validatecommand=(self.root.register(self.validate_number), "%P"), justify="center")
         criteria_frame.pack(side="top", fill="both", expand=True)
         CPU_label.grid(row=0,column=0)
         self.CPU_entry.grid(row=1,column=0)
@@ -78,10 +71,17 @@ class logHelperApp:
         finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess)
         finalizeButton.config(padx=80,pady=40,anchor="center")
         finalizeButton.pack(side="top",pady=40)
+     # validate if input is numbe
+    def validate_number(self, value):
+        if value.isdigit():
+            return True
+        elif value == "":
+            return True
+        else:
+            return False
 
     #Visualization Windows.
     def create_vis_window(self):
-        print(self.CPU_entry.get())
 
         #disable interactions w/root
         self.root.attributes('-disabled', True)
@@ -150,12 +150,13 @@ class logHelperApp:
     
         #checkbox windows
         self.fileWin=tk.Toplevel(self.viswindow)
+        self.fileWin.geometry(f"+{root.winfo_x()}+{root.winfo_y()}")
         self.fileWin.title("File Type")
         self.fileWin.withdraw()
 
         #loading win
         self.check_load_win=tk.Toplevel(self.fileWin)
-        self.check_load_win.geometry("400x100")
+        self.check_load_win.geometry(f"400x100+{root.winfo_x()}+{root.winfo_y()}")
         self.check_load_win.title("Loading")
         check_label=tk.Label(self.check_load_win,text="checking data type, please wait.....")
         check_label.pack(side="top", fill="both", expand=True)
@@ -192,7 +193,6 @@ class logHelperApp:
             label.pack()
             self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)
             
-            fileTools=["Furmark","HWInfo64"]
             self.file_checkboxes = []
 
             #furmark checkbox:
@@ -230,7 +230,7 @@ class logHelperApp:
         def run_cat_files():
             #loading window
             self.loadwin=tk.Toplevel(self.fileWin)
-            self.loadwin.geometry("300x100")
+            self.loadwin.geometry(f"300x100+{root.winfo_x()}+{root.winfo_y()}")
             self.loadwin.title("Loading")
             load_label=tk.Label(self.loadwin,text="Loading file data, please wait.....")
             load_label.pack(side="top", fill="both", expand=True)
@@ -336,11 +336,22 @@ class logHelperApp:
             # if col in df columns :visualize data
             if col in df.columns:
                 data=df[col]
+                #X軸長度
+                x = np.arange(len(data))
                 #data name+column name
                 dataname=str(file_name)+"_"+str(col)
                 #configure plot sizes
                 plt.figure(figsize=(10, 6))
                 plt.plot(data)
+                #switch cases
+                if (col=="CPU Package Power [W]" or col=="CPU Package [W]") and self.CPU_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
+                    cpu_e=float(self.CPU_entry.get())
+                    thresh_e=float(self.threshold_entry.get())
+                    plt.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
+                elif (col=="GPU Power [W]" or col=="Total Graphics Power") and self.GPU_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
+                    gpu_e=float(self.GPU_entry.get())
+                    thresh_e==float(self.threshold_entry.get())
+                    plt.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
                 plt.title(dataname)
                 plt.xlabel('Index')
                 plt.ylabel(col)
@@ -348,6 +359,7 @@ class logHelperApp:
                 #place all chart names in a array.
                 self.charts.append(chartname)
                 #save charts in the same folder
+                plt.show()
                 plt.savefig(chartname)
 
             #TPP needs special calculations for the hub
@@ -368,6 +380,11 @@ class logHelperApp:
                 data=df["TPP"]
                 dataname=str(file_name)+"_TPP"
                 plt.plot(df.index,data)
+                if col=="TPP" and self.TPP_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
+                    tpp_e=float(self.TPP_entry.get())
+                    thresh_e=float(self.threshold_entry.get())
+                    plt.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
+                #plt.fill_between
                 plt.title(dataname)
                 plt.xlabel('Index')
                 plt.ylabel("TPP")
