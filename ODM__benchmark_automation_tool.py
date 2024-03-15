@@ -10,6 +10,8 @@ from tkinter import messagebox
 from tkinter import Entry
 from openpyxl.drawing.image import Image
 from collections import defaultdict
+from matplotlib.widgets import SpanSelector
+
 
 #testing
 import ttkbootstrap
@@ -336,8 +338,6 @@ class logHelperApp:
             # if col in df columns :visualize data
             if col in df.columns:
                 data=df[col]
-                #X軸長度
-                x = np.arange(len(data))
                 #data name+column name
                 dataname=str(file_name)+"_"+str(col)
                 #configure plot sizes
@@ -359,8 +359,11 @@ class logHelperApp:
                 #place all chart names in a array.
                 self.charts.append(chartname)
                 #save charts in the same folder
-                plt.show()
                 plt.savefig(chartname)
+                plt.close()
+
+                #show images for data
+                self.twographs(data,dataname)
 
             #TPP needs special calculations for the hub
             elif col=="TPP":
@@ -391,8 +394,10 @@ class logHelperApp:
                 chartname=dataname+".png"
                 self.charts.append(chartname)
                 plt.savefig(chartname)
-
-                #saving 
+                plt.close()
+                
+                #showing images
+                
 
             # if col inot in df[col]: print error message
             else:
@@ -400,7 +405,7 @@ class logHelperApp:
                 er=tk.Label(self.loadwin,text=errmsg)
                 er.pack(side="top", fill="both", expand=True)
                 self.loadwin.update()
-            plt.close()
+                plt.close()
 
         # Foolproof: if theres no charts then stop rest of the program
         if len(self.charts)==0:
@@ -417,14 +422,64 @@ class logHelperApp:
             # merge into final document
             self.merge_df(df)
 
+    def twographs(self,basedata,dataname):
+        fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
+        plt.subplots_adjust(hspace=0.5)
+
+        x = np.arange(0.0, len(basedata), 1)  # Assuming x values are simply indices
+        y = basedata.values  # Assuming y values come from the specified column
+
+        ax1.plot(x, y)
+        ax1.set_title(str(dataname)+"_inspection")
+
+        line2, = ax2.plot([], [])
+        def onselect(xmin, xmax):
+            indmin, indmax = np.searchsorted(x, (xmin, xmax))
+            indmax = min(len(x) - 1, indmax)
+
+            region_x = x[indmin:indmax]
+            region_y = y[indmin:indmax]
+
+            if len(region_x) >= 2:
+                line2.set_data(region_x, region_y)
+                ax2.set_xlim(region_x[0], region_x[-1])
+                ax2.set_ylim(region_y.min(), region_y.max())
+
+                # Marking highest and lowest values
+                highest_idx = np.argmax(region_y)
+                lowest_idx = np.argmin(region_y)
+                ax2.plot(region_x[highest_idx], region_y[highest_idx], 'ro', label='Highest')
+                ax2.plot(region_x[lowest_idx], region_y[lowest_idx], 'bo', label='Lowest')
+
+                # Annotating highest and lowest values
+                ax2.annotate(f'{region_y[highest_idx]:.2f}', xy=(region_x[highest_idx], region_y[highest_idx]), xytext=(-20, 10), textcoords='offset points', arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', color='red'))
+                ax2.annotate(f'{region_y[lowest_idx]:.2f}', xy=(region_x[lowest_idx], region_y[lowest_idx]), xytext=(-20, 10), textcoords='offset points', arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', color='blue'))
+
+                fig.canvas.draw_idle()
+                
+        span = SpanSelector(
+            ax1,
+            onselect,
+            "horizontal",
+            useblit=True,
+            props=dict(alpha=0.5, facecolor="tab:blue"),
+            interactive=True,
+            drag_from_anywhere=True
+        )
+        # Set useblit=True on most backends for enhanced performance.
+        plt.show()
+
     #place the charts into a single file
     def mergecharts(self,charts,gate):
+            workbook = openpyxl.Workbook()
+            program_path = os.path.dirname(os.path.abspath(__file__))
+            extra_images=[]
+            
             if len(charts)==0:
                 tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
                 return
             
-            workbook = openpyxl.Workbook()
-            #圖像化部分
+            #Visualization
             worksheet = workbook.active
             i=-39
             try:
@@ -434,6 +489,19 @@ class logHelperApp:
                     i=i+40
                     cell="A"+str(i)
                     worksheet.add_image(img,cell)
+
+                #find other saved jpeg files in the folder
+                for filename in os.listdir(program_path):
+                    # Making sure files are jpeg format
+                    if filename.lower().endswith(".jpeg") or filename.lower().endswith(".jpg"):
+                        extra_imgpath = os.path.join(program_path, filename)
+                        img = Image(extra_imgpath)
+                        #Join into JPEG formats
+                        i += 40
+                        cell = "A" + str(i)
+                        worksheet.add_image(img, cell)
+                        extra_images.append(extra_imgpath)
+                
             except Exception as e:
                 tk.messagebox.showwarning(title="Exception happened", message=str(e))
                 
@@ -448,7 +516,9 @@ class logHelperApp:
             for chartpath in charts:
                 imgpath=str(chartpath)
                 os.remove(chartpath)
-            
+            for e in extra_images:
+                e_imgpath=str(e)
+                os.remove(e_imgpath)
 
     #Bassic logics of loading the chart.
     def merge_df(self,df):
