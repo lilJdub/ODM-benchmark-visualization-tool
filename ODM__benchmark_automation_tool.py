@@ -1,4 +1,5 @@
 import os
+import sys
 import tkinter as tk
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,8 +26,10 @@ class logHelperApp:
 
         #Placing and initiation of the objects and windows.
         self.root = root
-        self.root.title("LogHelper Widget")
+        self.root.title("ODM benchmark automation tool")
         self.root.resizable(False, False)
+        
+
         
         #Windows
         self.viswindow=None
@@ -64,7 +67,7 @@ class logHelperApp:
         self.TPP_entry.grid(row=1,column=2)
         threshold_label.grid(row=0,column=3)
         self.threshold_entry.grid(row=1,column=3)
-        
+        """
         # 創建下半部的框架
         bottom_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
         bottom_frame.pack(side="top", fill="both", expand=True)
@@ -73,6 +76,8 @@ class logHelperApp:
         finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess)
         finalizeButton.config(padx=80,pady=40,anchor="center")
         finalizeButton.pack(side="top",pady=40)
+        """
+        
      # validate if input is numbe
     def validate_number(self, value):
         if value.isdigit():
@@ -84,17 +89,18 @@ class logHelperApp:
 
     #Visualization Windows.
     def create_vis_window(self):
+        
+        #show root window if the current one is accidently closed
+        def on_close():
+            self.root.deiconify()
+            self.viswindow.destroy()
 
         #disable interactions w/root
-        self.root.attributes('-disabled', True)
+        #self.root.attributes('-disabled', True)
+        self.root.withdraw()
 
         self.viswindow=tk.Toplevel(root)
-        self.viswindow.geometry(self.root.geometry())
-
-        def on_close():
-            # Enable interactions with the root window when the viswindow is closed
-            self.root.attributes('-disabled', False)
-            self.viswindow.destroy()
+        self.viswindow.geometry(f"600x400+{root.winfo_x()}+{root.winfo_y()}")
         
         self.viswindow.protocol("WM_DELETE_WINDOW", on_close)
         self.viswindow.bind("<Destroy>", lambda e: on_close())
@@ -117,7 +123,7 @@ class logHelperApp:
         self.prodSKU = tk.Entry(self.viswindow, justify="center")
         self.prodSKU.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)
 
-        submitbutton = tk.Button(self.viswindow,text="Select Files",command=self.categorize_files)
+        submitbutton = tk.Button(self.viswindow,text="Select Logs",command=self.categorize_files)
         submitbutton.config(padx=20, pady=20)
         submitbutton.pack(side="top",anchor="center",pady=20 , padx=5,fill="both", expand=True)
 
@@ -127,6 +133,53 @@ class logHelperApp:
 
     #Categorize/choose log file types: first loading space of dataframes.
     def categorize_files(self):
+        
+        #show root window if the current one is accidently closed
+        def on_close():
+            self.root.deiconify()
+            self.viswindow.destroy()
+
+        #disable interactions w/root
+        #self.root.attributes('-disabled', True)
+        self.root.withdraw()
+
+        self.viswindow=tk.Toplevel(root)
+        self.viswindow.geometry(f"600x400+{root.winfo_x()}+{root.winfo_y()}")
+        
+        self.viswindow.protocol("WM_DELETE_WINDOW", on_close)
+        self.viswindow.bind("<Destroy>", lambda e: on_close())
+
+        self.viswindow.title("檔案類型選擇")
+        self.viswindow.resizable(False,False)
+
+        projectLabel = tk.Label(self.viswindow,text="Enter Project Name")
+        projectLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.projectName = tk.Entry(self.viswindow, justify="center")
+        self.projectName.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)    
+
+        phaseLabel = tk.Label(self.viswindow,text="Choose Phase Name")
+        phaseLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.phase=ttk.Combobox(self.viswindow,values=["DB","SI","PV","MV"],state="readonly", justify="center")
+        self.phase.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)
+
+        skuLabel = tk.Label(self.viswindow,text="Product SKU")
+        skuLabel.pack(side="top",anchor="center",pady=10,fill="both", expand=True)
+        self.prodSKU = tk.Entry(self.viswindow, justify="center")
+        self.prodSKU.pack(side="top",anchor="center",padx=10,pady=10,fill="both", expand=True)
+
+        submitbutton = tk.Button(self.viswindow,text="Select Logs",command=self.categorize_files)
+        submitbutton.config(padx=20, pady=20)
+        submitbutton.pack(side="top",anchor="center",pady=20 , padx=5,fill="both", expand=True)
+
+        # Set grab_set to make the viswindow modal
+        self.viswindow.grab_set()
+        self.viswindow.wait_window(self.viswindow)
+
+    #Categorize/choose log file types: first loading space of dataframes.
+    def categorize_files(self):
+        def on_close():
+            self.viswindow.deiconify()
+            self.fileWin.destroy()
         
         #紀錄project name
         project_name = self.projectName.get()
@@ -153,8 +206,13 @@ class logHelperApp:
         #checkbox windows
         self.fileWin=tk.Toplevel(self.viswindow)
         self.fileWin.geometry(f"+{root.winfo_x()}+{root.winfo_y()}")
+        self.fileWin.protocol("WM_DELETE_WINDOW", on_close)
+        self.fileWin.bind("<Destroy>", lambda e: on_close())
         self.fileWin.title("File Type")
         self.fileWin.withdraw()
+        #close last window
+        self.viswindow.withdraw()
+
 
         #loading win
         self.check_load_win=tk.Toplevel(self.fileWin)
@@ -198,11 +256,13 @@ class logHelperApp:
             self.file_checkboxes = []
 
             #furmark checkbox:
+            """
             f_var=tk.IntVar()
             f_checkbox=tk.Checkbutton(self.checkbox_frame, text="furmark",variable=f_var,pady=5)
             f_checkbox.var=f_var
             f_checkbox.pack(side=tk.LEFT, anchor=tk.W)
             self.file_checkboxes.append(f_checkbox)
+            """
 
             #HWINFO checkbox:
             hw_var=tk.IntVar()
@@ -217,8 +277,8 @@ class logHelperApp:
             self.tpp_checkbox.var=tp_var
 
             #check boxes based on df types
-            if df.columns[0]=="Renderer":
-                f_checkbox.select()
+            """if df.columns[0]=="Renderer":
+                f_checkbox.select()"""
             if df.columns[0]=="Date":
                 hw_checkbox.select()
                 self.add_tpp_check()
@@ -296,8 +356,8 @@ class logHelperApp:
             for k,v in val.items():
                 if v==1:
                     match k:
-                        case "Furmark":
-                            column_sets.add("gpu_power")
+                        #case "Furmark":
+                            #column_sets.add("gpu_power")
                         case "HWInfo64":
                             column_sets.add("CPU Package Power [W]")
                             column_sets.add("CPU Package [W]")
@@ -397,7 +457,7 @@ class logHelperApp:
                 plt.close()
                 
                 #showing images
-                
+                self.twographs(data,dataname)
 
             # if col inot in df[col]: print error message
             else:
@@ -471,54 +531,59 @@ class logHelperApp:
 
     #place the charts into a single file
     def mergecharts(self,charts,gate):
-            workbook = openpyxl.Workbook()
-            program_path = os.path.dirname(os.path.abspath(__file__))
-            extra_images=[]
+        workbook = openpyxl.Workbook()
+        exe_file_path =  os.path.dirname(os.path.abspath(sys.argv[0]))
+        extra_images=[]
             
-            if len(charts)==0:
-                tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
-                return
-            
-            #Visualization
-            worksheet = workbook.active
-            i=-39
-            try:
-                for chartpath in charts:
-                    imgpath=str(chartpath)
-                    img=Image(imgpath)
-                    i=i+40
-                    cell="A"+str(i)
-                    worksheet.add_image(img,cell)
+        if len(charts)==0:
+            tk.messagebox.showwarning(title="No data", message="There's no available charts for the whole project, no need for visualization")
+            return
 
-                #find other saved jpeg files in the folder
-                for filename in os.listdir(program_path):
-                    # Making sure files are jpeg format
-                    if filename.lower().endswith(".jpeg") or filename.lower().endswith(".jpg"):
-                        extra_imgpath = os.path.join(program_path, filename)
-                        img = Image(extra_imgpath)
-                        #Join into JPEG formats
-                        i += 40
-                        cell = "A" + str(i)
-                        worksheet.add_image(img, cell)
-                        extra_images.append(extra_imgpath)
-                
-            except Exception as e:
-                tk.messagebox.showwarning(title="Exception happened", message=str(e))
-                
-            #separate visualization names for log/img stacking
-            if gate==1:
-                excel_file_name = self.totalname+'_visualization.xlsx'
-            elif gate==2:
-                excel_file_name = self.combined_names+"_final_viz.xlsx"
-                
-            workbook.save(excel_file_name)
-
+        #Visualization
+        worksheet = workbook.active
+        i=-39
+        try:
             for chartpath in charts:
                 imgpath=str(chartpath)
-                os.remove(chartpath)
-            for e in extra_images:
-                e_imgpath=str(e)
-                os.remove(e_imgpath)
+                img=Image(imgpath)
+                i=i+40
+                cell="A"+str(i)
+                worksheet.add_image(img,cell)
+
+            #find other saved jpeg files in the folder
+            for filename in os.listdir(exe_file_path):
+                # user jpeg format
+                if filename.lower().endswith(".jpeg") and filename not in charts:
+                    img = Image(filename)
+                    i += 40
+                    cell = "A" + str(i)
+                    worksheet.add_image(img, cell)
+                    extra_images.append(filename)
+                # user saveed png format
+                if filename.lower().endswith(".png") and filename not in charts:
+                    img = Image(filename)
+                    i += 40
+                    cell = "A" + str(i)
+                    worksheet.add_image(img, cell)
+                    extra_images.append(filename)
+            
+        except Exception as e:
+            tk.messagebox.showwarning(title="Exception happened", message=str(e))
+            
+        #separate visualization names for log/img stacking
+        if gate==1:
+            excel_file_name = self.totalname+'_visualization.xlsx'
+        elif gate==2:
+            excel_file_name = self.combined_names+"_final_viz.xlsx"
+            
+        workbook.save(excel_file_name)
+
+        for chartpath in charts:
+            imgpath=str(chartpath)
+            os.remove(chartpath)
+        for e in extra_images:
+            e_imgpath=str(e)
+            os.remove(e_imgpath)
 
     #Bassic logics of loading the chart.
     def merge_df(self,df):
@@ -529,8 +594,6 @@ class logHelperApp:
     
     """
     Second function of the tool
-    """
-        
     def finalizeprocess(self):
         self.combined_names=""
         
@@ -663,6 +726,9 @@ class logHelperApp:
         if len(f_charts)>0:
             tk.messagebox.showwarning(title="Process done", message="Finished generating documents. Please check file folder.")
         self.final_checkwin.destroy()
+    """
+        
+    
 
 #主執行檔
 if __name__ == "__main__":#
