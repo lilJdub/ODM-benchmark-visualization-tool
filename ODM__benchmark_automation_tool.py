@@ -29,8 +29,6 @@ class logHelperApp:
         self.root.title("ODM benchmark automation tool")
         self.root.resizable(False, False)
         
-
-        
         #Windows
         self.viswindow=None
         self.fileWin=None
@@ -45,6 +43,8 @@ class logHelperApp:
         top_frame.pack(side="top", fill="both", expand=True)
         submitlabel=tk.Label(top_frame,text="Visualize & concat Files\n\n視覺化檔案並產出總檔")
         submitlabel.pack(side="top", pady=10)
+
+
         submitButton = tk.Button(top_frame,text="Select Files",command=self.create_vis_window)
         submitButton.config(padx=80,pady=40,anchor="center")
         submitButton.pack(side="top",pady=20)
@@ -411,6 +411,7 @@ class logHelperApp:
                 elif (col=="GPU Power [W]" or col=="Total Graphics Power") and self.GPU_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
                     gpu_e=float(self.GPU_entry.get())
                     thresh_e==float(self.threshold_entry.get())
+                    #The red threshhold line.
                     plt.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
                 plt.title(dataname)
                 plt.xlabel('Index')
@@ -486,6 +487,23 @@ class logHelperApp:
         fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
         plt.subplots_adjust(hspace=0.5)
 
+        thresh_e=float(self.threshold_entry.get())
+
+        #add reference lines over here
+        if dataname.endswith(("CPU Package Power [W]","CPU Package [W]")):
+            cpu_e=float(self.CPU_entry.get())
+            ax1.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
+            ax2.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
+        elif dataname.endswith(("GPU Power [W]","Total Graphics Power")):
+            gpu_e=float(self.GPU_entry.get())
+            #The red threshhold line.
+            ax1.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
+            ax2.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
+        elif dataname.endswith("TPP"):
+            tpp_e=float(self.TPP_entry.get())
+            ax1.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
+            ax2.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
+
         x = np.arange(0.0, len(basedata), 1)  # Assuming x values are simply indices
         y = basedata.values  # Assuming y values come from the specified column
 
@@ -511,7 +529,7 @@ class logHelperApp:
                 ax2.plot(region_x[highest_idx], region_y[highest_idx], 'ro', label='Highest')
                 ax2.plot(region_x[lowest_idx], region_y[lowest_idx], 'bo', label='Lowest')
 
-                # Annotating highest and lowest values
+                # Annotating highest and lowest valuesm
                 ax2.annotate(f'{region_y[highest_idx]:.2f}', xy=(region_x[highest_idx], region_y[highest_idx]), xytext=(-20, 10), textcoords='offset points', arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', color='red'))
                 ax2.annotate(f'{region_y[lowest_idx]:.2f}', xy=(region_x[lowest_idx], region_y[lowest_idx]), xytext=(-20, 10), textcoords='offset points', arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5', color='blue'))
 
