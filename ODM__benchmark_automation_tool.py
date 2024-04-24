@@ -18,7 +18,7 @@ from matplotlib.widgets import SpanSelector
 import ttkbootstrap
 
 class logHelperApp:
-
+    
     #initialize root window
     def __init__(self,root):
         style=ttkbootstrap.Style(theme="flatly")
@@ -36,6 +36,12 @@ class logHelperApp:
         
         self.merged_df=pd.DataFrame()
         self.totalname=""
+
+        #Variable_testing
+        self.cpu_tster=None
+        self.gpu_tster=None
+        self.tpp_tster=None
+        self.thresh_tster=None
 
         #Button & Frame
         # 創建上半部的框架
@@ -67,16 +73,6 @@ class logHelperApp:
         self.TPP_entry.grid(row=1,column=2)
         threshold_label.grid(row=0,column=3)
         self.threshold_entry.grid(row=1,column=3)
-        """
-        # 創建下半部的框架
-        bottom_frame = tk.Frame(self.root, bd=5, relief=tk.GROOVE)
-        bottom_frame.pack(side="top", fill="both", expand=True)
-        finalizelabel=tk.Label(bottom_frame,text="Stacking analysis\n疊圖分析\n\n(Disclaimer: 請使用視覺化產出的總檔來做分析)")
-        finalizelabel.pack(side="top", pady=20)
-        finalizeButton = tk.Button(bottom_frame,text="Select files",command=self.finalizeprocess)
-        finalizeButton.config(padx=80,pady=40,anchor="center")
-        finalizeButton.pack(side="top",pady=40)
-        """
         
      # validate if input is numbe
     def validate_number(self, value):
@@ -89,7 +85,13 @@ class logHelperApp:
 
     #Visualization Windows.
     def create_vis_window(self):
-        
+        self.cpu_tster = float(self.CPU_entry.get()) if self.CPU_entry.get().strip() else None
+        self.gpu_tster = float(self.GPU_entry.get()) if self.GPU_entry.get().strip() else None
+        self.tpp_tster = float(self.TPP_entry.get()) if self.TPP_entry.get().strip() else None
+        self.thresh_tster = float(self.threshold_entry.get()) if self.threshold_entry.get().strip() else None
+
+        print(self.cpu_tster, self.gpu_tster, self.tpp_tster, self.thresh_tster)
+
         #show root window if the current one is accidently closed
         def on_close():
             self.root.deiconify()
@@ -251,18 +253,9 @@ class logHelperApp:
             #Generate checkboxes and labels to each file
             label = tk.Label(self.fileWin, text=f"Choose {path} 's file type:")
             label.pack()
-            self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)
-            
+            self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)            
             self.file_checkboxes = []
 
-            #furmark checkbox:
-            """
-            f_var=tk.IntVar()
-            f_checkbox=tk.Checkbutton(self.checkbox_frame, text="furmark",variable=f_var,pady=5)
-            f_checkbox.var=f_var
-            f_checkbox.pack(side=tk.LEFT, anchor=tk.W)
-            self.file_checkboxes.append(f_checkbox)
-            """
 
             #HWINFO checkbox:
             hw_var=tk.IntVar()
@@ -271,14 +264,16 @@ class logHelperApp:
             hw_checkbox.pack(side=tk.LEFT, anchor=tk.W)
             self.file_checkboxes.append(hw_checkbox)
 
+            """
+            把hwinfo64拆開
+            """
+
+
             #TPP:
             tp_var=tk.IntVar()
             self.tpp_checkbox=tk.Checkbutton(self.checkbox_frame, text="TPP (Optional)",variable=tp_var,pady=5)
             self.tpp_checkbox.var=tp_var
 
-            #check boxes based on df types
-            """if df.columns[0]=="Renderer":
-                f_checkbox.select()"""
             if df.columns[0]=="Date":
                 hw_checkbox.select()
                 self.add_tpp_check()
@@ -320,7 +315,6 @@ class logHelperApp:
                 self.fileWin.destroy()
                 return
             
-            #d: 3DMark Prim95 AC': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'AIDA64+Furmark': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Burnin AC balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}, 'Furmark H_L_H AC Balanced': {'AIDA64': 0, 'Furmark': 1, '3DMark': 0, 'HWInfo64': 0, 'Prime95': 0}})
             self.loadwin.destroy()
             
 
@@ -404,15 +398,10 @@ class logHelperApp:
                 plt.figure(figsize=(10, 6))
                 plt.plot(data)
                 #switch cases
-                if (col=="CPU Package Power [W]" or col=="CPU Package [W]") and self.CPU_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
-                    cpu_e=float(self.CPU_entry.get())
-                    thresh_e=float(self.threshold_entry.get())
-                    plt.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
-                elif (col=="GPU Power [W]" or col=="Total Graphics Power") and self.GPU_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
-                    gpu_e=float(self.GPU_entry.get())
-                    thresh_e==float(self.threshold_entry.get())
-                    #The red threshhold line.
-                    plt.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
+                if (col=="CPU Package Power [W]" or col=="CPU Package [W]") and self.cpu_tster!=None and self.thresh_tster!=None:
+                    plt.axhspan(self.cpu_tster*(1-(0.01*self.thresh_tster)), self.cpu_tster, color="red", alpha=0.5)
+                elif (col=="GPU Power [W]" or col=="Total Graphics Power") and self.gpu_tster!=None and self.thresh_tster!=None:
+                    plt.axhspan(self.gpu_tster*(1-(0.01*self.thresh_tster)), self.gpu_tster, color="red", alpha=0.5)
                 plt.title(dataname)
                 plt.xlabel('Index')
                 plt.ylabel(col)
@@ -444,10 +433,8 @@ class logHelperApp:
                 data=df["TPP"]
                 dataname=str(file_name)+"_TPP"
                 plt.plot(df.index,data)
-                if col=="TPP" and self.TPP_entry.get().isnumeric() and self.threshold_entry.get().isnumeric():
-                    tpp_e=float(self.TPP_entry.get())
-                    thresh_e=float(self.threshold_entry.get())
-                    plt.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
+                if col=="TPP" and self.tpp_tster!=None and self.thresh_tster!=None:
+                    plt.axhspan(self.tpp_tster*(1-(0.01*self.thresh_tster)),self.tpp_tster,color="red", alpha=0.5)
                 #plt.fill_between
                 plt.title(dataname)
                 plt.xlabel('Index')
@@ -487,22 +474,16 @@ class logHelperApp:
         fig, (ax1, ax2) = plt.subplots(2, figsize=(8, 6))
         plt.subplots_adjust(hspace=0.5)
 
-        thresh_e=float(self.threshold_entry.get())
-
         #add reference lines over here
-        if dataname.endswith(("CPU Package Power [W]","CPU Package [W]")):
-            cpu_e=float(self.CPU_entry.get())
-            ax1.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
-            ax2.axhspan(cpu_e*(1-(0.01*thresh_e)), cpu_e, color="red", alpha=0.4)
-        elif dataname.endswith(("GPU Power [W]","Total Graphics Power")):
-            gpu_e=float(self.GPU_entry.get())
-            #The red threshhold line.
-            ax1.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
-            ax2.axhspan(gpu_e*(1-(0.01*thresh_e)), gpu_e, color="red", alpha=0.5)
-        elif dataname.endswith("TPP"):
-            tpp_e=float(self.TPP_entry.get())
-            ax1.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
-            ax2.axhspan(tpp_e*(1-(0.01*thresh_e)),tpp_e,color="red", alpha=0.5)
+        if dataname.endswith(("CPU Package Power [W]","CPU Package [W]")) and self.cpu_tster!=None and self.thresh_tster!=None:
+            ax1.axhspan(self.cpu_tster*(1-(0.01*self.thresh_tster)), self.cpu_tster, color="red", alpha=0.5)
+            ax2.axhspan(self.cpu_tster*(1-(0.01*self.thresh_tster)), self.cpu_tster, color="red", alpha=0.5)
+        elif dataname.endswith(("GPU Power [W]","Total Graphics Power")) and self.gpu_tster!=None and self.thresh_tster!=None:
+            ax1.axhspan(self.gpu_tster*(1-(0.01*self.thresh_tster)), self.gpu_tster, color="red", alpha=0.5)
+            ax2.axhspan(self.gpu_tster*(1-(0.01*self.thresh_tster)), self.gpu_tster, color="red", alpha=0.5)
+        elif dataname.endswith("TPP") and self.tpp_tster!=None and self.thresh_tster!=None:
+            ax1.axhspan(self.tpp_tster*(1-(0.01*self.thresh_tster)),self.tpp_tster,color="red", alpha=0.5)
+            ax2.axhspan(self.tpp_tster*(1-(0.01*self.thresh_tster)),self.tpp_tster,color="red", alpha=0.5)
 
         x = np.arange(0.0, len(basedata), 1)  # Assuming x values are simply indices
         y = basedata.values  # Assuming y values come from the specified column
@@ -609,143 +590,6 @@ class logHelperApp:
             self.merged_df=df
         else:
             self.merged_df=pd.concat([self.merged_df, df], axis=1)
-    
-    """
-    Second function of the tool
-    def finalizeprocess(self):
-        self.combined_names=""
-        
-        self.dict_path_df={}
-
-        f = filedialog.askopenfilenames(filetypes=[("CSV Files", "*.csv")])
-
-        #no need for later if f==none
-        if not f:
-            return
-        for path in f:
-            try:
-                self.dict_path_df[path]=pd.read_csv(path,header=[0, 1],low_memory=False)
-            except UnicodeDecodeError:
-                messagebox.showwarning("Error", "UnicodeDecodeError occurred. The file may have a differnt encoding.")
-                return
-
-        #the window for checkboxes
-        self.final_checkwin=tk.Toplevel(root)
-        self.final_checkwin.geometry(self.root.geometry())
-        fin_label_frame=tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
-        fin_label_frame.pack()
-        
-        fin_label1=tk.Label(fin_label_frame, text="Files chosen are: ")
-        fin_label1.pack()
-
-        #finding out path
-        for path, df in self.dict_path_df.items():
-            self.combined_names=self.combined_names+"_"+os.path.basename(path).removesuffix(".csv")
-            fin_check_label=tk.Label(fin_label_frame, text=path ,padx=10)
-            fin_check_label.pack(pady=(10,0))
-
-        #frame below for checkboxes
-        fin_check_frame= tk.Frame(self.final_checkwin, bd=5, relief=tk.GROOVE)
-        fin_check_frame.pack(fill="both",expand=True)
-
-        #choosing and setting the criteria of each df
-        fin_label2=tk.Label(fin_check_frame, text="Choose the criteria.")
-        fin_label2.pack()
-
-        self.chkbox_states= {
-            'furmark': [tk.BooleanVar()],
-            'hwinfo64': [tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(), tk.BooleanVar(),tk.BooleanVar()]
-        }
-
-        self.t_states={
-            'furmark': ["gpu_power"],
-            'hwinfo64': ["System Agent Power [W]","GPU Power [W]","IA Cores Power [W]","GT Cores Power [W]","CPU Package Power [W]","TPP"]
-        }
-        
-        #Furmark checkboxes
-        furmark_label = tk.Label(fin_check_frame, text="Furmark")
-        furmark_label.pack(pady=(5,0))
-        fmchkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
-        fmchkframe.pack()
-        chk=self.t_states["furmark"]
-        for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(fmchkframe, text=c,pady=5,variable=self.chkbox_states['furmark'][index])
-            cb.pack(side=tk.LEFT, anchor=tk.W)
-
-        #hwinfo64 checkboxes
-        hwinfo64_label = tk.Label(fin_check_frame, text="HWinfo 64",wraplength=100)
-        hwinfo64_label.pack(pady=(5,0))
-        hw64chkframe=tk.Frame(fin_check_frame, bd=5, relief=tk.GROOVE)
-        hw64chkframe.pack()
-        chk=self.t_states["hwinfo64"]
-        for index, c in enumerate(chk):            
-            cb=tk.Checkbutton(hw64chkframe, text=c,pady=5,variable=self.chkbox_states['hwinfo64'][index])
-            cb.pack(side=tk.TOP, anchor=tk.W)
-        
-        def run_analysis():
-        #getting parameters
-            params=[]
-            for key, vars_list in self.chkbox_states.items():
-                 for index, var in enumerate(vars_list):
-                    if var.get():
-                        #saving checkboxes checked.
-                        params.append(self.t_states[key][index])
-            self.img_stack_analysis(params)
-
-        final_analyze_btn=tk.Button(self.final_checkwin, text="Image stacking analysis.", command=run_analysis, pady=10)
-        final_analyze_btn.pack(fill="x", pady=10, padx=5)
-
-        #resizing window for oversizing
-        self.final_checkwin.update()
-        self.final_checkwin.minsize(self.final_checkwin.winfo_reqwidth(), self.final_checkwin.winfo_reqheight())
-        
-
-    #analysis
-    def img_stack_analysis(self, params):
-        f_charts=[]
-        for p in params:
-            #P=boxes checked
-            analysis_chartname=""
-            #see if everything is in place
-            for path, df in self.dict_path_df.items():
-                #if p = gpu
-                if p=="GPU Power [W]":
-                    if "GPU Power [W]" in df.columns:
-                        data=df["GPU Power [W]"]
-                    elif "Total Graphics Power"in df.columns:
-                        data=df["Total Graphics Power"]
-                    else:
-                        print(p+" not available in data provided.")
-                elif p=="CPU Package Power [W]":
-                    if "CPU Package Power [W]" in df.columns:
-                        data=df["CPU Package Power [W]"]
-                    elif "CPU Package [W]" in df.columns:
-                        data=df["CPU Package [W]"]
-                    else:
-                        print(p+" not available in data provided.")
-                else:
-                    if p in df.columns:
-                        data=df[p]
-                    else:
-                        print(p+" not available in data provided.")
-                file_basename=os.path.basename(path).removesuffix(".csv")
-                plt.plot(data, label=file_basename,alpha=0.6)
-                plt.title(p)
-                plt.legend()
-                analysis_chartname=path+"_"+p+".png"
-
-            #saving charts stacked into a file.
-            if analysis_chartname:
-                plt.savefig(analysis_chartname)
-                f_charts.append(analysis_chartname)
-                plt.close()
-        
-        self.mergecharts(f_charts, 2)
-        if len(f_charts)>0:
-            tk.messagebox.showwarning(title="Process done", message="Finished generating documents. Please check file folder.")
-        self.final_checkwin.destroy()
-    """
-        
     
 
 #主執行檔
