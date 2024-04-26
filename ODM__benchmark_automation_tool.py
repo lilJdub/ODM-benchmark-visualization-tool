@@ -256,28 +256,69 @@ class logHelperApp:
             self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)            
             self.file_checkboxes = []
 
-
+            """
             #HWINFO checkbox:
             hw_var=tk.IntVar()
-            hw_checkbox=tk.Checkbutton(self.checkbox_frame, text="HWInfo64",variable=hw_var,pady=5,command=self.add_tpp_check)
+            hw_checkbox=tk.Checkbutton(self.checkbox_frame, text="HWInfo64",variable=hw_var,pady=5)
             hw_checkbox.var=hw_var
             hw_checkbox.pack(side=tk.LEFT, anchor=tk.W)
             self.file_checkboxes.append(hw_checkbox)
 
-            """
             把hwinfo64拆開
+            column_sets.add("CPU Package Power [W]")
+            column_sets.add("CPU Package [W]")
+            column_sets.add("IA Cores Power [W]")
+            column_sets.add("GT Cores Power [W]")
+            column_sets.add("GPU Power [W]")
+            column_sets.add("System Agent Power [W]")
+            column_sets.add("Total Graphics Power")
             """
+            
+            cpu_var=tk.IntVar()
+            cpu_checkbox=tk.Checkbutton(self.checkbox_frame, text="CPU Power",variable=cpu_var,pady=5)
+            cpu_checkbox.var=cpu_var
+            cpu_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(cpu_checkbox)
+
+            gpu_var=tk.IntVar()
+            gpu_checkbox=tk.Checkbutton(self.checkbox_frame, text="GPU Power",variable=gpu_var,pady=5)
+            gpu_checkbox.var=gpu_var
+            gpu_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(gpu_checkbox)
+
+            ia_var=tk.IntVar()
+            ia_checkbox=tk.Checkbutton(self.checkbox_frame, text="IA Cores Power",variable=ia_var,pady=5)
+            ia_checkbox.var=ia_var
+            ia_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(ia_checkbox)
+
+            gt_var=tk.IntVar()
+            gt_checkbox=tk.Checkbutton(self.checkbox_frame, text="GT Cores Power",variable=gt_var,pady=5)
+            gt_checkbox.var=gt_var
+            gt_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(gt_checkbox)
+
+            sa_var=tk.IntVar()
+            sa_checkbox=tk.Checkbutton(self.checkbox_frame, text="System Agent Power",variable=sa_var,pady=5)
+            sa_checkbox.var=sa_var
+            sa_checkbox.pack(side=tk.LEFT, anchor=tk.W)
+            self.file_checkboxes.append(sa_checkbox)
 
 
             #TPP:
             tp_var=tk.IntVar()
             self.tpp_checkbox=tk.Checkbutton(self.checkbox_frame, text="TPP (Optional)",variable=tp_var,pady=5)
             self.tpp_checkbox.var=tp_var
+            self.file_checkboxes.append(self.tpp_checkbox)
+            self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
 
+            """
             if df.columns[0]=="Date":
                 hw_checkbox.select()
                 self.add_tpp_check()
 
+            """
+            
             # Store the association between checkboxes and the current file
             checkbox_file_association.append((path, self.file_checkboxes))
 
@@ -327,14 +368,7 @@ class logHelperApp:
 
         self.fileWin.grab_set()
 
-    #shows TPP when hwinfo64 is selected
-    def add_tpp_check(self):
-        if self.tpp_checkbox not in self.file_checkboxes:
-            self.file_checkboxes.append(self.tpp_checkbox)
-            self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
-        else:
-            self.file_checkboxes.remove(self.tpp_checkbox)
-            self.tpp_checkbox.pack_forget()
+    
 
     #main hub for visualization and merging
     def visualize_and_merge_files(self,dfPile,d):
@@ -352,14 +386,18 @@ class logHelperApp:
                     match k:
                         #case "Furmark":
                             #column_sets.add("gpu_power")
-                        case "HWInfo64":
+                        case "CPU Power":
                             column_sets.add("CPU Package Power [W]")
                             column_sets.add("CPU Package [W]")
-                            column_sets.add("IA Cores Power [W]")
-                            column_sets.add("GT Cores Power [W]")
+                        case "GPU Power":
                             column_sets.add("GPU Power [W]")
-                            column_sets.add("System Agent Power [W]")
                             column_sets.add("Total Graphics Power")
+                        case "IA Cores Power":
+                            column_sets.add("IA Cores Power [W]")
+                        case "GT Cores Power":
+                            column_sets.add("GT Cores Power [W]")
+                        case "System Agent Power":
+                            column_sets.add("System Agent Power [W]")
                         case "TPP (Optional)":
                             column_sets.add("TPP")
 
