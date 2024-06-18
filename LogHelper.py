@@ -379,6 +379,7 @@ class logHelperApp:
                         case "GPU Power":
                             column_sets.add("GPU Power [W]")
                             column_sets.add("Total Graphics Power")
+                            column_sets.add("Total Graphics Power (TGP) [W]")
                         case "IA Cores Power":
                             column_sets.add("IA Cores Power [W]")
                         case "GT Cores Power":
@@ -452,6 +453,8 @@ class logHelperApp:
                     gpu=df["GPU Power [W]"]
                 elif "Total Graphics Power" in df.columns:
                     gpu=df["Total Graphics Power"]
+                elif "Total Graphics Power (TGP) [W]" in df.columns:
+                    gpu=df["Total Graphics Power (TGP) [W]"]
                 else: gpu=None
                 #calculations for tpp:
                 df["TPP"]=cpu.add(gpu)
@@ -503,7 +506,7 @@ class logHelperApp:
         if dataname.endswith(("CPU Package Power [W]","CPU Package [W]")) and self.cpu_tster!=None and self.thresh_tster!=None:
             ax1.axhspan(self.cpu_tster*(1-(0.01*self.thresh_tster)), self.cpu_tster, color="red", alpha=0.5)
             ax2.axhspan(self.cpu_tster*(1-(0.01*self.thresh_tster)), self.cpu_tster, color="red", alpha=0.5)
-        elif dataname.endswith(("GPU Power [W]","Total Graphics Power")) and self.gpu_tster!=None and self.thresh_tster!=None:
+        elif dataname.endswith(("GPU Power [W]","Total Graphics Power","Total Graphics Power (TGP) [W]")) and self.gpu_tster!=None and self.thresh_tster!=None:
             ax1.axhspan(self.gpu_tster*(1-(0.01*self.thresh_tster)), self.gpu_tster, color="red", alpha=0.5)
             ax2.axhspan(self.gpu_tster*(1-(0.01*self.thresh_tster)), self.gpu_tster, color="red", alpha=0.5)
         elif dataname.endswith("TPP") and self.tpp_tster!=None and self.thresh_tster!=None:
