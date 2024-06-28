@@ -90,8 +90,6 @@ class logHelperApp:
         self.tpp_tster = float(self.TPP_entry.get()) if self.TPP_entry.get().strip() else None
         self.thresh_tster = float(self.threshold_entry.get()) if self.threshold_entry.get().strip() else None
 
-        print(self.cpu_tster, self.gpu_tster, self.tpp_tster, self.thresh_tster)
-
         #show root window if the current one is accidently closed
         def on_close():
             self.root.deiconify()
@@ -243,23 +241,7 @@ class logHelperApp:
             self.checkbox_frame = tk.Frame(self.fileWin, bd=5, relief=tk.GROOVE)            
             self.file_checkboxes = []
 
-            """
-            #HWINFO checkbox:
-            hw_var=tk.IntVar()
-            hw_checkbox=tk.Checkbutton(self.checkbox_frame, text="HWInfo64",variable=hw_var,pady=5)
-            hw_checkbox.var=hw_var
-            hw_checkbox.pack(side=tk.LEFT, anchor=tk.W)
-            self.file_checkboxes.append(hw_checkbox)
-
-            把hwinfo64拆開
-            column_sets.add("CPU Package Power [W]")
-            column_sets.add("CPU Package [W]")
-            column_sets.add("IA Cores Power [W]")
-            column_sets.add("GT Cores Power [W]")
-            column_sets.add("GPU Power [W]")
-            column_sets.add("System Agent Power [W]")
-            column_sets.add("Total Graphics Power")
-            """
+            
 
             cpu_var=tk.IntVar()
             cpu_checkbox=tk.Checkbutton(self.checkbox_frame, text="CPU Power",variable=cpu_var,pady=5)
@@ -298,13 +280,6 @@ class logHelperApp:
             self.tpp_checkbox.var=tp_var
             self.file_checkboxes.append(self.tpp_checkbox)
             self.tpp_checkbox.pack(side=tk.LEFT, anchor=tk.W)
-
-            """
-            if df.columns[0]=="Date":
-                hw_checkbox.select()
-                self.add_tpp_check()
-
-            """
             
             # Store the association between checkboxes and the current file
             checkbox_file_association.append((path, self.file_checkboxes))
